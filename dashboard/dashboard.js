@@ -133,9 +133,11 @@ export function renderComparisonChart(runs) {
   </svg><div class="legend">${legend}</div>`;
 }
 
-// Compression report: for a set of runs (same model + dataset, different
-// compressors) show tokens, savings vs raw, verdict accuracy, and — crucially —
-// whether the compressed judgment matches the uncompressed (raw) judgment.
+// Compression report — the core thesis of JudgeSaab:
+//   Compression is valid when the AI reaches the SAME judgment on the compressed
+//   facts as on the full facts. "Judgment fidelity" = share of historical cases
+//   whose verdict is unchanged vs the raw (full-context) run. High token savings
+//   at 100% fidelity means the compression preserved the legally-decisive signal.
 export function renderCompressionReport(runs) {
   if (!runs.length) return '';
   const raw = runs.find((r) => r.compressor === 'raw') || runs[0];
@@ -148,42 +150,82 @@ export function renderCompressionReport(runs) {
     .map((run) => {
       const s = run.summary;
       const savings = rawTokens ? 1 - s.avgTokens / rawTokens : 0;
-      // Fraction of cases whose verdict is unchanged vs the raw (full-context) run.
+      // Per-case: did compression change the AI's verdict vs the full-context run?
+      const flips = [];
       let same = 0;
       for (const r of run.results) {
-        if (canonicalVerdict(r.judgment?.verdict || '') === rawVerdicts.get(r.caseId)) same++;
+        const cv = canonicalVerdict(r.judgment?.verdict || '');
+        const rv = rawVerdicts.get(r.caseId);
+        if (cv === rv) same++;
+        else flips.push({ title: r.title, from: rv, to: cv });
       }
-      const sameRatio = run.results.length ? same / run.results.length : 1;
-      return { run, s, savings, sameRatio };
+      const fidelity = run.results.length ? same / run.results.length : 1;
+      return { run, s, savings, fidelity, flips, isRaw: run.compressor === raw.compressor };
     })
     .sort((a, b) => a.s.avgTokens - b.s.avgTokens);
 
+  // Recommendation: the biggest token saving that keeps 100% judgment fidelity.
+  const valid = rows.filter((r) => !r.isRaw && r.fidelity >= 0.999);
+  const best = valid.sort((a, b) => b.savings - a.savings)[0];
+  const banner = best
+    ? `<div class="fidelity-banner good">✅ <strong>${escapeHtml(best.run.compressor)}</strong> cuts
+       <strong>${fmtPct(best.savings)}</strong> of tokens while the AI's judgment stays
+       <strong>100% unchanged</strong> across ${best.run.results.length} cases — compression is valid here.</div>`
+    : `<div class="fidelity-banner bad">⚠️ No strategy kept the judgment 100% unchanged on this set —
+       every compression flipped at least one verdict. Compression is not safe here yet.</div>`;
+
   const body = rows
-    .map(({ run, s, savings, sameRatio }) => {
-      const isRaw = run.compressor === raw.compressor;
+    .map(({ run, s, savings, fidelity, isRaw }) => {
       return `<tr class="${isRaw ? 'row-raw' : ''}">
-        <td><strong>${escapeHtml(run.compressor)}</strong>${isRaw ? ' <span class="muted small">(baseline)</span>' : ''}</td>
+        <td><strong>${escapeHtml(run.compressor)}</strong>${isRaw ? ' <span class="muted small">(full context — reference)</span>' : ''}</td>
         <td>${s.avgTokens}</td>
         <td class="${savings > 0 ? 'good-text' : ''}">${isRaw ? '—' : fmtPct(savings)}</td>
+        <td>${isRaw ? '<span class="muted">reference</span>' : sameBadge(fidelity)}</td>
         <td>${fmtPct(s.verdict)}</td>
-        <td>${isRaw ? '—' : sameBadge(sameRatio)}</td>
-        <td>${fmtPct(s.overall)}</td>
       </tr>`;
     })
     .join('');
 
-  return `<table class="leaderboard compression-report">
+  // Show exactly where compression broke the judgment.
+  const flipped = rows.filter((r) => !r.isRaw && r.flips.length);
+  const flipSection = flipped.length
+    ? `<div class="flip-detail">
+        <h4>Where compression changed the judgment</h4>
+        ${flipped
+          .map(
+            (r) => `<div class="flip-group"><span class="flip-strategy">${escapeHtml(
+              r.run.compressor
+            )}</span>${r.flips
+              .map(
+                (f) =>
+                  `<div class="flip-row"><span class="flip-case">${escapeHtml(f.title)}</span>
+                   <span class="flip-change"><span class="score-pill good">${escapeHtml(
+                     f.from
+                   )}</span> → <span class="score-pill bad">${escapeHtml(f.to)}</span></span></div>`
+              )
+              .join('')}</div>`
+          )
+          .join('')}
+      </div>`
+    : '';
+
+  return `${banner}
+    <table class="leaderboard compression-report">
     <thead><tr>
       <th>Strategy</th><th>Avg tokens</th><th>Token savings</th>
-      <th>Verdict acc.</th><th>Same as raw</th><th>Overall</th>
+      <th>Judgment fidelity (vs full context)</th><th>Verdict acc. (vs human)</th>
     </tr></thead>
     <tbody>${body}</tbody></table>
-    <p class="muted small">“Same as raw” = share of cases whose verdict is unchanged after compression — high savings with 100% here means the judgment held despite fewer tokens.</p>`;
+    <p class="muted small"><strong>Judgment fidelity</strong> = share of historical cases whose AI verdict
+    is unchanged after compression. This — not accuracy vs the human judge — is the test of whether the
+    compression works: if the model decides the same way on fewer tokens, the decisive facts survived.</p>
+    ${flipSection}`;
 }
 
 function sameBadge(v) {
   const cls = v >= 0.999 ? 'good' : v >= 0.7 ? 'mid' : 'bad';
-  return `<span class="score-pill ${cls}">${Math.round(v * 100)}%</span>`;
+  const label = v >= 0.999 ? '100% preserved' : `${Math.round(v * 100)}% preserved`;
+  return `<span class="score-pill ${cls}">${label}</span>`;
 }
 
 export function renderCaseDetail(result) {

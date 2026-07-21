@@ -18,6 +18,7 @@ import {
   exportResults,
 } from '../benchmark/index.js';
 import { getAllRuns, clearRuns } from '../core/store.js';
+import { canonicalVerdict as canon } from '../evaluation/index.js';
 import {
   renderSummaryCards,
   renderLeaderboard,
@@ -158,10 +159,23 @@ const onCompareCompression = busyDuring(async () => {
   // Token-savings vs judgment-stability report.
   $('#compressionReport').innerHTML = renderCompressionReport(runs);
   $('#compressionPanel').hidden = false;
-  const best = [...runs].sort((a, b) => a.summary.avgTokens - b.summary.avgTokens)[0];
+  // Report the biggest token saving that kept the judgment 100% unchanged.
+  const raw = runs.find((r) => r.compressor === 'raw');
+  const rawV = new Map(raw.results.map((r) => [r.caseId, canon(r.judgment?.verdict)]));
+  const rawTok = raw.summary.avgTokens || 1;
+  const valid = runs
+    .filter((r) => r.compressor !== 'raw')
+    .map((r) => {
+      const same = r.results.every((x) => canon(x.judgment?.verdict) === rawV.get(x.caseId));
+      return { c: r.compressor, save: 1 - r.summary.avgTokens / rawTok, same };
+    })
+    .filter((r) => r.same)
+    .sort((a, b) => b.save - a.save)[0];
   logLine(
-    `Compression comparison complete. Smallest context: ${best.compressor} (${best.summary.avgTokens} tok, verdict ${(best.summary.verdict * 100).toFixed(0)}%).`,
-    'info'
+    valid
+      ? `Judgment-fidelity test: "${valid.c}" cuts ${(valid.save * 100).toFixed(0)}% of tokens with the verdict 100% unchanged — compression valid.`
+      : 'Judgment-fidelity test: every strategy flipped at least one verdict — compression not safe on this set.',
+    valid ? 'info' : 'warn'
   );
 });
 

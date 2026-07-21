@@ -153,6 +153,22 @@ table.leaderboard { width: 100%; border-collapse: collapse; font-size: 14px; min
 .bad-text { color: var(--bad); }
 .good-text { color: var(--good); font-weight: 600; }
 .compression-report .row-raw { background: var(--panel-2); }
+.fidelity-banner {
+  border-radius: 12px;
+  padding: 14px 16px;
+  margin-bottom: 14px;
+  font-size: 14px;
+  border: 1px solid var(--border);
+}
+.fidelity-banner.good { background: color-mix(in srgb, var(--good) 12%, var(--panel)); border-color: color-mix(in srgb, var(--good) 40%, var(--border)); }
+.fidelity-banner.bad { background: color-mix(in srgb, var(--bad) 12%, var(--panel)); border-color: color-mix(in srgb, var(--bad) 40%, var(--border)); }
+.flip-detail { margin-top: 16px; }
+.flip-detail h4 { font-size: 14px; margin-bottom: 8px; }
+.flip-group { border: 1px solid var(--border); border-radius: 10px; padding: 10px 12px; margin-bottom: 8px; background: var(--panel-2); }
+.flip-strategy { font-weight: 700; font-size: 13px; text-transform: capitalize; }
+.flip-row { display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; margin-top: 6px; font-size: 13px; }
+.flip-case { color: var(--muted); }
+.flip-change { display: inline-flex; align-items: center; gap: 6px; }
 
 /* Chart */
 .chart-wrap { overflow-x: auto; }

@@ -96,11 +96,15 @@
       </div>
 
       <section id="compressionPanel" class="panel" hidden>
-        <h2>Compression report — fewer tokens, same judgment?</h2>
+        <h2>Does the compression work? — judgment fidelity test</h2>
         <p class="muted small">
-          Runs every context strategy (including <strong>Headroom</strong>, an adaptive
-          query-aware compressor) on the selected model + dataset, then measures token
-          savings against whether the verdict still matches the full-context judgment.
+          <strong>The core test of JudgeSaab:</strong> take real historical court cases, compress the
+          facts, and re-run the AI judge. If the model returns the <strong>same judgment on the
+          compressed facts as on the full facts</strong>, the compression preserved the
+          legally-decisive information — it works. This is measured as <strong>judgment fidelity</strong>
+          (verdict unchanged vs full context), independent of whether the AI agrees with the human judge.
+          Runs every strategy (including <strong>Headroom</strong>, an adaptive query-aware compressor)
+          on the selected model + dataset.
         </p>
         <div id="compressionReport" class="scroll-x"></div>
       </section>
