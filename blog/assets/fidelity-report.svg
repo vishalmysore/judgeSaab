@@ -1,0 +1,70 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 960 470" font-family="Inter, Segoe UI, system-ui, sans-serif">
+  <rect width="960" height="470" fill="#ffffff"/>
+  <rect x="20" y="20" width="920" height="430" rx="16" fill="#ffffff" stroke="#e4e9f5"/>
+
+  <text x="44" y="58" font-size="18" font-weight="700" fill="#17233f">Does the compression work? — judgment fidelity test</text>
+
+  <!-- banner -->
+  <rect x="44" y="76" width="872" height="46" rx="10" fill="#e9f9f0" stroke="#9fe3c2"/>
+  <text x="62" y="104" font-size="13.5" fill="#0f9d76">✅ <tspan font-weight="700">semantic</tspan> cuts <tspan font-weight="700">52.4%</tspan> of tokens while the AI's judgment stays <tspan font-weight="700">100% unchanged</tspan> across 3 cases — compression is valid here.</text>
+
+  <!-- table header -->
+  <g font-size="11.5" fill="#5c6685" font-weight="700">
+    <text x="60" y="152">STRATEGY</text>
+    <text x="300" y="152">AVG TOKENS</text>
+    <text x="440" y="152">TOKEN SAVINGS</text>
+    <text x="620" y="152">JUDGMENT FIDELITY</text>
+    <text x="820" y="152">VERDICT ACC.</text>
+  </g>
+  <line x1="44" y1="164" x2="916" y2="164" stroke="#e4e9f5"/>
+
+  <!-- rows: strategy, tokens, savings, fidelity badge, verdict -->
+  <!-- kgraph (bad) -->
+  <g font-size="12.5">
+    <text x="60" y="192" font-weight="700" fill="#17233f">kgraph</text>
+    <text x="300" y="192" fill="#17233f">12</text>
+    <text x="440" y="192" font-weight="700" fill="#10b981">88.3%</text>
+    <rect x="620" y="178" width="120" height="22" rx="6" fill="#fdecec"/><text x="680" y="193" text-anchor="middle" font-size="11.5" font-weight="700" fill="#ef4444">67% preserved</text>
+    <text x="820" y="192" fill="#17233f">66.7%</text>
+  </g>
+  <line x1="44" y1="208" x2="916" y2="208" stroke="#f0f3fa"/>
+  <!-- semantic (best) -->
+  <g font-size="12.5">
+    <rect x="44" y="212" width="872" height="30" fill="#f6faf7"/>
+    <text x="60" y="232" font-weight="700" fill="#17233f">semantic ★</text>
+    <text x="300" y="232" fill="#17233f">49</text>
+    <text x="440" y="232" font-weight="700" fill="#10b981">52.4%</text>
+    <rect x="620" y="218" width="120" height="22" rx="6" fill="#e7f8ef"/><text x="680" y="233" text-anchor="middle" font-size="11.5" font-weight="700" fill="#0f9d76">100% preserved</text>
+    <text x="820" y="232" fill="#17233f">100%</text>
+  </g>
+  <!-- structured -->
+  <g font-size="12.5">
+    <text x="60" y="272" font-weight="700" fill="#17233f">structured</text>
+    <text x="300" y="272" fill="#17233f">51</text>
+    <text x="440" y="272" font-weight="700" fill="#10b981">50.5%</text>
+    <rect x="620" y="258" width="120" height="22" rx="6" fill="#e7f8ef"/><text x="680" y="273" text-anchor="middle" font-size="11.5" font-weight="700" fill="#0f9d76">100% preserved</text>
+    <text x="820" y="272" fill="#17233f">100%</text>
+  </g>
+  <line x1="44" y1="288" x2="916" y2="288" stroke="#f0f3fa"/>
+  <!-- headroom -->
+  <g font-size="12.5">
+    <text x="60" y="312" font-weight="700" fill="#2f56c8">Headroom (smart)</text>
+    <text x="300" y="312" fill="#17233f">79</text>
+    <text x="440" y="312" font-weight="700" fill="#10b981">23.3%</text>
+    <rect x="620" y="298" width="120" height="22" rx="6" fill="#e7f8ef"/><text x="680" y="313" text-anchor="middle" font-size="11.5" font-weight="700" fill="#0f9d76">100% preserved</text>
+    <text x="820" y="312" fill="#17233f">100%</text>
+  </g>
+  <line x1="44" y1="328" x2="916" y2="328" stroke="#f0f3fa"/>
+  <!-- raw -->
+  <g font-size="12.5">
+    <rect x="44" y="332" width="872" height="30" fill="#f4f6fc"/>
+    <text x="60" y="352" font-weight="700" fill="#17233f">raw <tspan font-weight="400" fill="#9aa3bd">(full context — reference)</tspan></text>
+    <text x="300" y="352" fill="#17233f">103</text>
+    <text x="440" y="352" fill="#9aa3bd">—</text>
+    <text x="620" y="352" fill="#9aa3bd">reference</text>
+    <text x="820" y="352" fill="#17233f">100%</text>
+  </g>
+
+  <text x="44" y="400" font-size="11.5" fill="#5c6685"><tspan font-weight="700">Judgment fidelity</tspan> = share of historical cases whose AI verdict is unchanged after compression.</text>
+  <text x="44" y="420" font-size="11.5" fill="#5c6685">This — not accuracy vs. the human judge — is the test of whether the compression works.</text>
+</svg>
