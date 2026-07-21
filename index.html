@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>JudgeSaab — Browser-Native AI Judge Benchmark</title>
+    <meta
+      name="description"
+      content="JudgeSaab: a 100% browser-native, privacy-first benchmark that evaluates AI models on real legal reasoning using WebGPU + WebLLM."
+    />
+    <link rel="stylesheet" href="css/styles.css" />
+    <link
+      rel="icon"
+      href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>⚖️</text></svg>"
+    />
+  </head>
+  <body>
+    <header class="site-header">
+      <div class="brand">
+        <span class="logo">⚖️</span>
+        <div>
+          <h1>JudgeSaab</h1>
+          <p class="tagline">How would AI judge this case?</p>
+        </div>
+      </div>
+      <div class="header-meta">
+        <span id="gpuBadge" class="badge">checking…</span>
+        <a
+          class="badge link"
+          href="https://github.com/"
+          target="_blank"
+          rel="noopener"
+          >Open source</a
+        >
+      </div>
+    </header>
+
+    <main>
+      <section class="intro">
+        <p>
+          A browser-native benchmark that compares AI judgments against real human court
+          decisions — entirely on your device. Documents never leave the browser. Powered by
+          <strong>WebGPU + WebLLM</strong>, with a heuristic baseline that runs anywhere.
+        </p>
+      </section>
+
+      <section class="controls card">
+        <div class="control">
+          <label for="modelSelect">Model</label>
+          <select id="modelSelect"></select>
+        </div>
+        <div class="control">
+          <label for="datasetSelect">Dataset</label>
+          <select id="datasetSelect"></select>
+        </div>
+        <div class="control">
+          <label for="compressorSelect">Context representation</label>
+          <select id="compressorSelect"></select>
+        </div>
+        <div class="control">
+          <label for="promptSelect">Prompt</label>
+          <select id="promptSelect"></select>
+        </div>
+        <div class="control narrow">
+          <label for="repeatsInput">Repeats</label>
+          <input id="repeatsInput" type="number" min="1" max="5" value="1" />
+        </div>
+        <div class="control actions">
+          <button id="runBtn" class="primary">Run benchmark</button>
+          <button id="compareBtn">Compare models</button>
+          <button id="compressBtn">Compare compression</button>
+        </div>
+      </section>
+
+      <section class="progress-wrap">
+        <div class="progress-track"><div id="progressBar" class="progress-bar"></div></div>
+        <div id="progressText" class="progress-text"></div>
+      </section>
+
+      <section class="panel">
+        <div class="panel-head">
+          <h2>Dashboard <span id="runTitle" class="muted small"></span></h2>
+          <div class="panel-actions">
+            <button id="exportJsonBtn" class="ghost">Export JSON</button>
+            <button id="exportCsvBtn" class="ghost">Export CSV</button>
+            <button id="clearBtn" class="ghost danger">Clear</button>
+          </div>
+        </div>
+        <div id="summaryCards" class="cards"></div>
+      </section>
+
+      <div class="grid-2">
+        <section class="panel">
+          <h2>Leaderboard</h2>
+          <div id="leaderboard" class="scroll-x"></div>
+        </section>
+        <section class="panel">
+          <h2>Model / strategy comparison</h2>
+          <div id="comparisonChart" class="chart-wrap"></div>
+        </section>
+      </div>
+
+      <section class="panel">
+        <h2>Case-by-case judgments</h2>
+        <div id="caseList" class="case-list"></div>
+      </section>
+
+      <section class="panel">
+        <h2>Log</h2>
+        <div id="log" class="log"></div>
+      </section>
+
+      <section class="panel about">
+        <h2>How it works</h2>
+        <ol>
+          <li><strong>Load case</strong> from a bundled dataset (ECtHR, SCOTUS, CaseHOLD…).</li>
+          <li><strong>Hide</strong> the human judgment; the model sees only the facts + question.</li>
+          <li><strong>Generate</strong> an AI judgment (verdict, reasoning, laws, confidence).</li>
+          <li><strong>Reveal</strong> the actual judgment and <strong>score</strong> across accuracy, reasoning, citation, hallucination, calibration, and consistency.</li>
+          <li><strong>Update</strong> the leaderboard.</li>
+        </ol>
+        <p class="muted small">
+          Programmatic API on <code>window.JudgeSaab</code>: <code>loadDataset()</code>,
+          <code>runBenchmark()</code>, <code>runCase()</code>, <code>evaluate()</code>,
+          <code>compareModels()</code>, <code>exportResults()</code>. Bundled cases are original
+          synthetic scenarios; real corpora can be added via the plugin API.
+        </p>
+      </section>
+    </main>
+
+    <footer class="site-footer">
+      <span>JudgeSaab v1.0 · browser-native · privacy-first · open source</span>
+    </footer>
+
+    <script type="module" src="core/api.js"></script>
+    <script type="module" src="ui/app.js"></script>
+  </body>
+</html>

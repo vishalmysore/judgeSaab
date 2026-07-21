@@ -1,0 +1,13 @@
+# Harness / editor
+.claude/
+.vscode/
+.idea/
+
+# OS
+Thumbs.db
+.DS_Store
+
+# Node (only if a build is added later)
+node_modules/
+dist/
+*.log
