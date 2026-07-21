@@ -85,6 +85,7 @@ function wireEvents() {
     await refreshLeaderboard();
     $('#caseList').innerHTML = '';
     $('#summaryCards').innerHTML = '';
+    $('#runContext').innerHTML = '';
     logLine('Cleared all stored runs.', 'info');
   });
 
@@ -175,6 +176,14 @@ function readOpts() {
 
 function renderRun(run) {
   $('#summaryCards').innerHTML = renderSummaryCards(run.summary);
+  const dsName = datasets.get(run.datasetId)?.name || run.datasetId;
+  const compLabel = compressors.get(run.compressor)?.label || run.compressor;
+  $('#runContext').innerHTML =
+    `<span class="rc-item">🧠 <strong>${escapeHtml(run.modelName)}</strong></span>` +
+    `<span class="rc-item">📚 ${escapeHtml(dsName)} · ${run.summary.n} cases</span>` +
+    `<span class="rc-item rc-compression">🗜️ Compression applied: <strong>${escapeHtml(
+      compLabel
+    )}</strong> · ~${run.summary.avgTokens} tokens/case</span>`;
 }
 
 function appendCase(result) {

@@ -50,6 +50,7 @@ export async function runCase(model, caseObj, opts = {}) {
     year: caseObj.year,
     source: caseObj.source ?? null,
     compressor,
+    compressorLabel: view.label,
     contextTokens: view.tokensApprox,
     judgment: judgments[judgments.length - 1],
     rawText: lastOut?.text,

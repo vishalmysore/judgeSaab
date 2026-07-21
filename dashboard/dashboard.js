@@ -244,6 +244,9 @@ export function renderCaseDetail(result) {
       <h4>${escapeHtml(result.title)}</h4>
       <span class="pill ${match}">${s.verdictMatch ? '✓ verdict match' : '✗ verdict mismatch'}</span>
     </div>
+    <div class="case-meta">🗜️ ${escapeHtml(result.compressorLabel || result.compressor || 'Raw document')} · ${
+      result.contextTokens
+    } tokens</div>
     ${renderSource(result)}
     <div class="verdict-grid">
       <div class="vcol">

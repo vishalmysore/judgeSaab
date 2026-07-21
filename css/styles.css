@@ -206,7 +206,11 @@ svg.chart .grid { stroke: var(--border); stroke-dasharray: 3 3; }
 .pill { font-size: 12px; padding: 3px 10px; border-radius: 999px; font-weight: 600; }
 .pill.match { background: color-mix(in srgb, var(--good) 20%, transparent); color: var(--good); }
 .pill.mismatch { background: color-mix(in srgb, var(--bad) 20%, transparent); color: var(--bad); }
-.case-source { font-size: 12px; margin-top: 8px; }
+.run-context { display: flex; flex-wrap: wrap; gap: 8px 16px; margin: 4px 0 14px; font-size: 13px; color: var(--muted); }
+.run-context .rc-item { display: inline-flex; align-items: center; gap: 4px; }
+.run-context .rc-compression { background: color-mix(in srgb, var(--accent) 10%, var(--panel)); border: 1px solid color-mix(in srgb, var(--accent) 30%, var(--border)); border-radius: 8px; padding: 3px 10px; color: var(--text); }
+.case-meta { font-size: 12px; color: var(--muted); margin-top: 6px; }
+.case-source { font-size: 12px; margin-top: 4px; }
 .case-source a { font-weight: 600; }
 .verdict-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-top: 12px; }
 @media (max-width: 640px) { .verdict-grid { grid-template-columns: 1fr; } }
