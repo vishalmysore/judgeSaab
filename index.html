@@ -37,34 +37,34 @@
           It runs real historical court cases through an AI judge, compresses the facts, and checks
           whether the verdict stays the same — if it does, the compression preserved what mattered.
           Entirely on your device: documents never leave the browser. Powered by
-          <strong>WebGPU + WebLLM</strong>, with a heuristic baseline that runs anywhere.
+          <strong>WebGPU + WebLLM</strong>.
         </p>
       </section>
 
       <section class="controls card">
         <div class="control">
-          <label for="modelSelect">Model</label>
+          <label for="modelSelect">Model <span class="info" tabindex="0" title="The AI model that acts as the judge. Real models run locally via WebGPU + WebLLM; the first run downloads the weights and caches them. Run models one at a time.">ⓘ</span></label>
           <select id="modelSelect"></select>
         </div>
         <div class="control">
-          <label for="datasetSelect">Dataset</label>
+          <label for="datasetSelect">Dataset <span class="info" tabindex="0" title="A set of court cases with known human verdicts. The model is scored on how it judges them.">ⓘ</span></label>
           <select id="datasetSelect"></select>
         </div>
         <div class="control">
-          <label for="compressorSelect">Context representation</label>
+          <label for="compressorSelect">Context representation <span class="info" tabindex="0" title="How the case facts are compressed before the model sees them — from raw (full text) to Headroom, semantic, knowledge-graph, etc. This is what the fidelity test evaluates.">ⓘ</span></label>
           <select id="compressorSelect"></select>
         </div>
         <div class="control">
-          <label for="promptSelect">Prompt</label>
+          <label for="promptSelect">Prompt <span class="info" tabindex="0" title="The instruction template given to the judge (asks for verdict, reasoning, laws, and confidence as JSON).">ⓘ</span></label>
           <select id="promptSelect"></select>
         </div>
         <div class="control narrow">
-          <label for="repeatsInput">Repeats</label>
+          <label for="repeatsInput">Repeats <span class="info" tabindex="0" title="Judge each case this many times to measure how consistent the model is across runs.">ⓘ</span></label>
           <input id="repeatsInput" type="number" min="1" max="5" value="1" />
         </div>
         <div class="control actions">
-          <button id="runBtn" class="primary">Run selected model</button>
-          <button id="compressBtn">Compare compression</button>
+          <button id="runBtn" class="primary" title="Judge every case in the selected dataset with the selected model, score the results, and save them to the leaderboard.">Run selected model</button>
+          <button id="compressBtn" title="Run every compression strategy on the selected model + dataset and test whether the verdict stays the same as full context (the judgment-fidelity test).">Compare compression</button>
         </div>
         <p class="control-hint">
           Run models <strong>one at a time</strong> — each result is saved (in-browser, IndexedDB) and
@@ -81,11 +81,11 @@
 
       <section class="panel">
         <div class="panel-head">
-          <h2>Dashboard</h2>
+          <h2>Dashboard <span class="info" tabindex="0" title="Scores for your most recent run, averaged across all cases in the dataset.">ⓘ</span></h2>
           <div class="panel-actions">
-            <button id="exportJsonBtn" class="ghost">Export JSON</button>
-            <button id="exportCsvBtn" class="ghost">Export CSV</button>
-            <button id="clearBtn" class="ghost danger">Clear</button>
+            <button id="exportJsonBtn" class="ghost" title="Download every saved run as JSON.">Export JSON</button>
+            <button id="exportCsvBtn" class="ghost" title="Download the leaderboard as a CSV spreadsheet.">Export CSV</button>
+            <button id="clearBtn" class="ghost danger" title="Delete all saved runs from this browser.">Clear</button>
           </div>
         </div>
         <div id="summaryCards" class="cards"></div>
@@ -93,11 +93,11 @@
 
       <div class="grid-2">
         <section class="panel">
-          <h2>Leaderboard</h2>
+          <h2>Leaderboard <span class="info" tabindex="0" title="Every saved run, best overall first. Re-running the same model + dataset + strategy updates its row instead of adding a duplicate.">ⓘ</span></h2>
           <div id="leaderboard" class="scroll-x"></div>
         </section>
         <section class="panel">
-          <h2>Model / strategy comparison</h2>
+          <h2>Model / strategy comparison <span class="info" tabindex="0" title="Metric-by-metric bar chart comparing your most recent runs (or compression strategies, after a compression comparison).">ⓘ</span></h2>
           <div id="comparisonChart" class="chart-wrap"></div>
         </section>
       </div>
@@ -117,12 +117,12 @@
       </section>
 
       <section class="panel">
-        <h2>Case-by-case judgments</h2>
+        <h2>Case-by-case judgments <span class="info" tabindex="0" title="For each case: the AI's judgment side-by-side with the actual human court judgment, plus per-case scores and the case source.">ⓘ</span></h2>
         <div id="caseList" class="case-list"></div>
       </section>
 
       <section class="panel">
-        <h2>Log</h2>
+        <h2>Log <span class="info" tabindex="0" title="Activity and status messages — model loading, saved runs, and fidelity results.">ⓘ</span></h2>
         <div id="log" class="log"></div>
       </section>
 

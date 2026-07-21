@@ -26,8 +26,8 @@ never leave the browser.
 ## Highlights
 
 - 🔒 **Privacy-first** — inference runs locally; nothing is uploaded.
-- 🧠 **Multi-model** — Gemma, Qwen, Llama, Phi, SmolLM, Mistral via WebLLM, plus a
-  no-GPU **heuristic baseline** that runs anywhere.
+- 🧠 **Multi-model** — Gemma, Qwen, Llama, Phi, SmolLM, Mistral via WebLLM, run one
+  at a time with results saved to a persistent leaderboard.
 - ⚖️ **Legal reasoning, not just verdicts** — scores verdict agreement, reasoning
   similarity, citation quality, hallucination rate, confidence calibration, and
   consistency.
@@ -47,9 +47,9 @@ python -m http.server 8123
 # then open http://localhost:8123
 ```
 
-WebLLM models require a Chromium-based browser with WebGPU enabled. The
-**Heuristic Baseline** runs in any browser and serves as the floor real models
-should beat.
+Models run on-device via WebGPU, so a Chromium-based browser (Chrome/Edge 113+)
+with WebGPU enabled is required. The first time you pick a model its weights
+download from the CDN and are cached in the browser; run models one at a time.
 
 ## Programmatic API
 
@@ -57,8 +57,8 @@ Exposed on `window.JudgeSaab`:
 
 ```js
 const cases = await JudgeSaab.loadDataset('ECtHR');
-const run   = await JudgeSaab.runBenchmark({ modelId: 'mock-heuristic', datasetId: 'ECtHR' });
-const runs  = await JudgeSaab.compareModels(['mock-heuristic'], { datasetId: 'SCOTUS' });
+const run   = await JudgeSaab.runBenchmark({ modelId: 'Llama-3.2-1B-Instruct-q4f16_1-MLC', datasetId: 'ECtHR' });
+const runs  = await JudgeSaab.compareCompression('Llama-3.2-1B-Instruct-q4f16_1-MLC', 'ECtHR', ['raw','headroom','semantic']);
 JudgeSaab.exportResults(runs, 'csv');
 ```
 
@@ -91,7 +91,7 @@ knowledge-graph view (−88% tokens) flips a verdict — exactly the tradeoff to
 ```
 judgesaab/
  ├── core/          registries, event bus, IndexedDB store, public API
- ├── models/        WebLLM adapter + heuristic baseline + prompt templates
+ ├── models/        WebLLM adapter + prompt templates
  ├── datasets/      bundled synthetic cases (ECtHR, SCOTUS, CaseHOLD)
  ├── compression/   context-representation strategies (+ headroom.js port)
  ├── benchmark/     run engine (runCase / runBenchmark / compareModels)

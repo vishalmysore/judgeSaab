@@ -4,11 +4,12 @@
 
 import { models } from '../core/registry.js';
 import { log } from '../core/events.js';
-import { createMockModel } from './mock.js';
 import { WEBLLM_MODELS, createWebLLMModel, hasWebGPU } from './webllm.js';
 
+// The no-GPU heuristic baseline (models/mock.js) is intentionally NOT registered
+// — it exists for offline testing but was noise in the leaderboard. Register it
+// via a plugin if you want a floor model back.
 export function registerModels() {
-  models.register(createMockModel());
   for (const def of WEBLLM_MODELS) {
     models.register(createWebLLMModel(def));
   }

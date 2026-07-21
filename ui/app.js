@@ -60,10 +60,10 @@ async function checkGPU() {
     badge.textContent = 'WebGPU available';
     badge.className = 'badge good';
   } else {
-    badge.textContent = 'No WebGPU — baseline only';
+    badge.textContent = 'WebGPU not available';
     badge.className = 'badge bad';
     logLine(
-      'WebGPU not detected. LLM models need a Chromium-based browser with WebGPU. The Heuristic Baseline runs anywhere.',
+      'WebGPU not detected. JudgeSaab runs models on-device via WebGPU — please use a Chromium-based browser (Chrome/Edge 113+) with WebGPU enabled.',
       'warn'
     );
   }
@@ -191,6 +191,9 @@ async function refreshLeaderboard() {
   // store and in exports.
   const latest = new Map();
   for (const r of stored.sort((a, b) => a.ts - b.ts)) {
+    // Drop runs whose model is no longer registered (e.g. the removed baseline),
+    // so stale rows don't linger in the leaderboard.
+    if (!models.has(r.modelId)) continue;
     latest.set(`${r.modelId}|${r.datasetId}|${r.compressor}`, r);
   }
   allRuns = [...latest.values()];

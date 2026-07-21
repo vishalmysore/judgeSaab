@@ -7,23 +7,24 @@ import { canonicalVerdict } from '../evaluation/index.js';
 
 export function renderSummaryCards(summary) {
   const cards = [
-    { label: 'Overall score', value: fmtPct(summary.overall), tone: tone(summary.overall) },
-    { label: 'Verdict accuracy', value: fmtPct(summary.verdict), tone: tone(summary.verdict) },
-    { label: 'Reasoning', value: fmtPct(summary.reasoning), tone: tone(summary.reasoning) },
-    { label: 'Citation quality', value: fmtPct(summary.citation), tone: tone(summary.citation) },
+    { label: 'Overall score', value: fmtPct(summary.overall), tone: tone(summary.overall), tip: 'Blended score across verdict, reasoning, citation, and hallucination.' },
+    { label: 'Verdict accuracy', value: fmtPct(summary.verdict), tone: tone(summary.verdict), tip: 'Share of cases where the AI matched the human court verdict.' },
+    { label: 'Reasoning', value: fmtPct(summary.reasoning), tone: tone(summary.reasoning), tip: 'Text similarity between the AI and court reasoning.' },
+    { label: 'Citation quality', value: fmtPct(summary.citation), tone: tone(summary.citation), tip: 'Overlap of cited laws with the laws the court applied.' },
     {
       label: 'Hallucination rate',
       value: fmtPct(summary.hallucination),
       tone: tone(1 - summary.hallucination),
+      tip: 'Share of cited laws unsupported by the facts or court — lower is better.',
     },
-    { label: 'Consistency', value: fmtPct(summary.consistency), tone: tone(summary.consistency) },
-    { label: 'Latency', value: fmtMs(summary.latencyMs), tone: 'neutral' },
-    { label: 'Tokens/sec', value: round(summary.tokensPerSec, 1), tone: 'neutral' },
+    { label: 'Consistency', value: fmtPct(summary.consistency), tone: tone(summary.consistency), tip: 'Agreement of verdicts across repeated runs of the same case.' },
+    { label: 'Latency', value: fmtMs(summary.latencyMs), tone: 'neutral', tip: 'Average time to judge one case.' },
+    { label: 'Tokens/sec', value: round(summary.tokensPerSec, 1), tone: 'neutral', tip: 'Model generation throughput.' },
   ];
   return cards
     .map(
       (c) => `
-    <div class="card metric ${c.tone}">
+    <div class="card metric ${c.tone}" title="${c.tip}">
       <div class="metric-value">${c.value}</div>
       <div class="metric-label">${c.label}</div>
     </div>`
@@ -59,8 +60,13 @@ export function renderLeaderboard(runs) {
     .join('');
   return `<table class="leaderboard">
     <thead><tr>
-      <th>#</th><th>Model</th><th>Overall</th><th>Verdict</th><th>Reasoning</th>
-      <th>Citation</th><th>Halluc.</th><th>Tokens</th>
+      <th>#</th><th>Model</th>
+      <th title="Blended score: 45% verdict + 30% reasoning + 15% citation + 10% (1 − hallucination).">Overall</th>
+      <th title="Share of cases where the AI's verdict matched the human court's decision.">Verdict</th>
+      <th title="Text similarity between the AI's reasoning and the court's reasoning.">Reasoning</th>
+      <th title="Overlap between the laws the AI cited and the laws the court actually applied.">Citation</th>
+      <th title="Share of cited laws not supported by the facts or the court — lower is better.">Halluc.</th>
+      <th title="Average number of context tokens fed to the model per case.">Tokens</th>
     </tr></thead>
     <tbody>${rows}</tbody></table>`;
 }
@@ -238,6 +244,7 @@ export function renderCaseDetail(result) {
       <h4>${escapeHtml(result.title)}</h4>
       <span class="pill ${match}">${s.verdictMatch ? '✓ verdict match' : '✗ verdict mismatch'}</span>
     </div>
+    ${renderSource(result)}
     <div class="verdict-grid">
       <div class="vcol">
         <div class="vcol-title">AI judgment</div>
@@ -260,6 +267,21 @@ export function renderCaseDetail(result) {
       ${scorePill('Overall', s.overall)}
     </div>
   </div>`;
+}
+
+// Case source line. Real cases link out to the official record; the bundled
+// cases are illustrative synthetic scenarios and are labelled as such.
+function renderSource(result) {
+  const meta = [result.jurisdiction, result.year].filter(Boolean).join(' · ');
+  const src = result.source;
+  if (src && src.url) {
+    return `<div class="case-source">
+      📎 Source: <a href="${escapeHtml(src.url)}" target="_blank" rel="noopener">${escapeHtml(
+        src.label || 'View the actual case'
+      )}</a>${meta ? ` <span class="muted">· ${escapeHtml(meta)}</span>` : ''}</div>`;
+  }
+  return `<div class="case-source muted" title="This is an original scenario written in the style of the corpus, not a real court decision, so there is no case to link to.">
+    ⚠️ Illustrative synthetic case — not a real court decision${meta ? ` <span>· ${escapeHtml(meta)}</span>` : ''}</div>`;
 }
 
 function scorePill(label, v, invert = false) {
