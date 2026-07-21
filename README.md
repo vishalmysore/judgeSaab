@@ -23,8 +23,9 @@ never leave the browser.
   similarity, citation quality, hallucination rate, confidence calibration, and
   consistency.
 - 🗜️ **Context-compression benchmark** — compare raw / chunking / semantic /
-  structured / timeline / knowledge-graph representations to see which preserves
-  legal reasoning best.
+  structured / timeline / knowledge-graph / **Headroom** / dedupe representations
+  to see which preserves legal reasoning best, with a report that measures token
+  savings **against whether the verdict still matches the full-context judgment**.
 - 📊 **Dashboards & leaderboard** — inline, dependency-free.
 - 🧩 **Plugin system** — add models, datasets, jurisdictions, metrics, prompts.
 
@@ -52,6 +53,30 @@ const runs  = await JudgeSaab.compareModels(['mock-heuristic'], { datasetId: 'SC
 JudgeSaab.exportResults(runs, 'csv');
 ```
 
+## Token-cost reduction (Headroom + enterprise techniques)
+
+JudgeSaab bakes in several of the token-saving techniques used in production LLM
+systems, then **measures whether compressing the context changes the judgment**:
+
+- **Headroom (smart / aggressive)** — a dependency-free port of the adaptive text
+  compressor from [chopratejas/headroom](https://github.com/chopratejas/headroom)
+  (Apache-2.0), via the browser port in
+  [vishalmysore/ragCompressionDemo](https://github.com/vishalmysore/ragCompressionDemo).
+  It scores each sentence with keyword-priority tiers + a **query-relevance** layer
+  (the legal question) and keeps the top-K sentences chosen by a Kneedle
+  information-saturation sizer (SimHash de-dup + bigram-diversity curve). *Retrieve
+  Less Context / Summarize Long Inputs / Tune Retrieval Size.*
+- **Remove Duplicate Context** — SimHash near-duplicate sentence removal.
+- **Semantic / Structured / Timeline / Chunking / Knowledge-graph** — alternate
+  representations of the facts.
+
+Click **Compare compression** to run every strategy on the selected model +
+dataset. The report shows, per strategy: average context tokens, token savings vs
+raw, verdict accuracy, and **“same as raw”** — the share of cases whose verdict is
+unchanged after compression. On the bundled ECtHR set, Headroom/semantic/structured
+cut 23–52% of tokens with the verdict **100% unchanged**, while an over-aggressive
+knowledge-graph view (−88% tokens) flips a verdict — exactly the tradeoff to watch.
+
 ## Architecture
 
 ```
@@ -59,7 +84,7 @@ judgesaab/
  ├── core/          registries, event bus, IndexedDB store, public API
  ├── models/        WebLLM adapter + heuristic baseline + prompt templates
  ├── datasets/      bundled synthetic cases (ECtHR, SCOTUS, CaseHOLD)
- ├── compression/   context-representation strategies
+ ├── compression/   context-representation strategies (+ headroom.js port)
  ├── benchmark/     run engine (runCase / runBenchmark / compareModels)
  ├── evaluation/    metrics (accuracy, reasoning, reliability)
  ├── dashboard/     cards, leaderboard, SVG charts
@@ -92,3 +117,8 @@ fetch and normalize into the same case schema.
 ## License
 
 Open source. See spec in [`JudgeSaab_Spec_v1.md`](JudgeSaab_Spec_v1.md).
+
+`compression/headroom.js` is a derivative work of
+[chopratejas/headroom](https://github.com/chopratejas/headroom)
+(Apache-2.0, © 2025 Headroom Contributors); attribution is preserved in the file
+header as required by Apache 2.0 §4.

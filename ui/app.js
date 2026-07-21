@@ -22,6 +22,7 @@ import {
   renderSummaryCards,
   renderLeaderboard,
   renderComparisonChart,
+  renderCompressionReport,
   renderCaseDetail,
 } from '../dashboard/dashboard.js';
 
@@ -154,7 +155,14 @@ const onCompareCompression = busyDuring(async () => {
   // last so it wins over the leaderboard's default (by-model) chart render.
   const labeled = runs.map((r) => ({ ...r, modelName: `${r.compressor}` }));
   $('#comparisonChart').innerHTML = renderComparisonChart(labeled);
-  logLine('Compression comparison complete — see chart.', 'info');
+  // Token-savings vs judgment-stability report.
+  $('#compressionReport').innerHTML = renderCompressionReport(runs);
+  $('#compressionPanel').hidden = false;
+  const best = [...runs].sort((a, b) => a.summary.avgTokens - b.summary.avgTokens)[0];
+  logLine(
+    `Compression comparison complete. Smallest context: ${best.compressor} (${best.summary.avgTokens} tok, verdict ${(best.summary.verdict * 100).toFixed(0)}%).`,
+    'info'
+  );
 });
 
 function readOpts() {

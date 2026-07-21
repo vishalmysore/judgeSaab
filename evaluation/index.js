@@ -6,19 +6,17 @@ import { metrics } from '../core/registry.js';
 import { cosine, jaccard, normalize, round, tokenSet } from '../core/utils.js';
 
 // --- Verdict normalization: map model output to a canonical label. ---
-const VERDICT_ALIASES = {
-  violation: ['violation', 'violated', 'breach', 'infringement'],
-  no_violation: ['no_violation', 'no violation', 'not violated', 'no breach', 'compliant'],
-  reversed: ['reversed', 'reverse', 'vacated', 'overturned', 'unconstitutional'],
-  affirmed: ['affirmed', 'affirm', 'upheld', 'valid', 'constitutional'],
-};
-
+// Order matters: negated forms ("no violation") and "unconstitutional" must be
+// tested before their positive substrings ("violation", "constitutional"),
+// otherwise the includes()-style match flips opposite verdicts into agreement.
+// Word boundaries keep "unconstitutional" from matching "constitutional".
 function canonicalVerdict(v = '') {
-  const n = normalize(v);
+  const n = normalize(v); // lowercased, punctuation/underscores -> spaces
   if (/^option[\s_]?\d+$/.test(n)) return n.replace(/\s/g, '_');
-  for (const [canon, aliases] of Object.entries(VERDICT_ALIASES)) {
-    if (aliases.some((a) => n.includes(normalize(a)))) return canon;
-  }
+  if (/\bno violation\b|\bnot violated\b|\bno breach\b|\bcompliant\b/.test(n)) return 'no_violation';
+  if (/\bviolation\b|\bviolated\b|\bbreach\b|\binfringement\b/.test(n)) return 'violation';
+  if (/\breversed?\b|\bvacated\b|\boverturned\b|\bunconstitutional\b/.test(n)) return 'reversed';
+  if (/\baffirmed?\b|\bupheld\b|\bconstitutional\b|\bvalid\b/.test(n)) return 'affirmed';
   return n;
 }
 

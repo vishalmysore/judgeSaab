@@ -3,6 +3,7 @@
 // case-detail comparison view. Everything is dependency-free SVG/HTML.
 
 import { fmtPct, fmtMs, round, escapeHtml } from '../core/utils.js';
+import { canonicalVerdict } from '../evaluation/index.js';
 
 export function renderSummaryCards(summary) {
   const cards = [
@@ -52,14 +53,14 @@ export function renderLeaderboard(runs) {
         <td>${fmtPct(s.reasoning)}</td>
         <td>${fmtPct(s.citation)}</td>
         <td class="${s.hallucination > 0.2 ? 'bad-text' : ''}">${fmtPct(s.hallucination)}</td>
-        <td>${fmtMs(s.latencyMs)}</td>
+        <td>${s.avgTokens ?? '—'}</td>
       </tr>`;
     })
     .join('');
   return `<table class="leaderboard">
     <thead><tr>
       <th>#</th><th>Model</th><th>Overall</th><th>Verdict</th><th>Reasoning</th>
-      <th>Citation</th><th>Halluc.</th><th>Latency</th>
+      <th>Citation</th><th>Halluc.</th><th>Tokens</th>
     </tr></thead>
     <tbody>${rows}</tbody></table>`;
 }
@@ -130,6 +131,59 @@ export function renderComparisonChart(runs) {
   return `<svg viewBox="0 0 ${W} ${H}" class="chart" role="img" aria-label="Model comparison chart">
     ${yTicks}${bars}${labels}
   </svg><div class="legend">${legend}</div>`;
+}
+
+// Compression report: for a set of runs (same model + dataset, different
+// compressors) show tokens, savings vs raw, verdict accuracy, and — crucially —
+// whether the compressed judgment matches the uncompressed (raw) judgment.
+export function renderCompressionReport(runs) {
+  if (!runs.length) return '';
+  const raw = runs.find((r) => r.compressor === 'raw') || runs[0];
+  const rawTokens = raw.summary.avgTokens || 0;
+  const rawVerdicts = new Map(
+    raw.results.map((r) => [r.caseId, canonicalVerdict(r.judgment?.verdict || '')])
+  );
+
+  const rows = runs
+    .map((run) => {
+      const s = run.summary;
+      const savings = rawTokens ? 1 - s.avgTokens / rawTokens : 0;
+      // Fraction of cases whose verdict is unchanged vs the raw (full-context) run.
+      let same = 0;
+      for (const r of run.results) {
+        if (canonicalVerdict(r.judgment?.verdict || '') === rawVerdicts.get(r.caseId)) same++;
+      }
+      const sameRatio = run.results.length ? same / run.results.length : 1;
+      return { run, s, savings, sameRatio };
+    })
+    .sort((a, b) => a.s.avgTokens - b.s.avgTokens);
+
+  const body = rows
+    .map(({ run, s, savings, sameRatio }) => {
+      const isRaw = run.compressor === raw.compressor;
+      return `<tr class="${isRaw ? 'row-raw' : ''}">
+        <td><strong>${escapeHtml(run.compressor)}</strong>${isRaw ? ' <span class="muted small">(baseline)</span>' : ''}</td>
+        <td>${s.avgTokens}</td>
+        <td class="${savings > 0 ? 'good-text' : ''}">${isRaw ? '—' : fmtPct(savings)}</td>
+        <td>${fmtPct(s.verdict)}</td>
+        <td>${isRaw ? '—' : sameBadge(sameRatio)}</td>
+        <td>${fmtPct(s.overall)}</td>
+      </tr>`;
+    })
+    .join('');
+
+  return `<table class="leaderboard compression-report">
+    <thead><tr>
+      <th>Strategy</th><th>Avg tokens</th><th>Token savings</th>
+      <th>Verdict acc.</th><th>Same as raw</th><th>Overall</th>
+    </tr></thead>
+    <tbody>${body}</tbody></table>
+    <p class="muted small">“Same as raw” = share of cases whose verdict is unchanged after compression — high savings with 100% here means the judgment held despite fewer tokens.</p>`;
+}
+
+function sameBadge(v) {
+  const cls = v >= 0.999 ? 'good' : v >= 0.7 ? 'mid' : 'bad';
+  return `<span class="score-pill ${cls}">${Math.round(v * 100)}%</span>`;
 }
 
 export function renderCaseDetail(result) {

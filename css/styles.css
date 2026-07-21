@@ -151,6 +151,8 @@ table.leaderboard { width: 100%; border-collapse: collapse; font-size: 14px; min
 .minibar-fill { position: absolute; inset: 0; width: 0; background: linear-gradient(90deg, var(--accent), var(--good)); }
 .minibar span { position: relative; font-size: 11px; padding-left: 8px; line-height: 20px; font-weight: 600; }
 .bad-text { color: var(--bad); }
+.good-text { color: var(--good); font-weight: 600; }
+.compression-report .row-raw { background: var(--panel-2); }
 
 /* Chart */
 .chart-wrap { overflow-x: auto; }

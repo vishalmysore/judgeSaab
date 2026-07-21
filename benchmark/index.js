@@ -16,7 +16,11 @@ export async function runCase(model, caseObj, opts = {}) {
   const { compressor = 'raw', promptId = 'default', repeats = 1, temperature = 0.2 } = opts;
 
   // 2. hide human judgment — we only pass facts + question to the model.
-  const view = compress(compressor, caseObj.facts); // { text, tokensApprox }
+  //    Query-aware compressors (headroom) get the legal question as context.
+  const view = compress(compressor, caseObj.facts, {
+    caseObj,
+    question: caseObj.question,
+  }); // { text, tokensApprox }
   const contextText = view.text;
 
   const judgments = [];
@@ -116,6 +120,7 @@ export function summarize(results) {
     return {
       n: 0, overall: 0, verdict: 0, reasoning: 0, citation: 0,
       hallucination: 0, calibration: 0, consistency: 0, latencyMs: 0, tokensPerSec: 0,
+      avgTokens: 0,
     };
   }
   const avg = (sel) => round(results.reduce((s, r) => s + sel(r), 0) / results.length, 3);
@@ -130,6 +135,7 @@ export function summarize(results) {
     consistency: avg((r) => r.scores.consistency ?? 1),
     latencyMs: round(results.reduce((s, r) => s + r.perf.latencyMs, 0) / results.length, 1),
     tokensPerSec: round(results.reduce((s, r) => s + r.perf.tokensPerSec, 0) / results.length, 1),
+    avgTokens: Math.round(results.reduce((s, r) => s + (r.contextTokens || 0), 0) / results.length),
   };
 }
 

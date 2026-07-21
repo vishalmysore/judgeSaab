@@ -5,9 +5,12 @@
 
 import { compressors } from '../core/registry.js';
 import { tokens } from '../core/utils.js';
+import { compressText, dedupeSentences } from './headroom.js';
 
 const approxTokens = (s) => Math.ceil(tokens(s, { keepStop: true }).length * 1.3);
 
+// Compressor.apply receives (facts, ctx) where ctx = { caseObj, question }.
+// Query-aware strategies (headroom) use ctx.question; others ignore it.
 function make(id, label, description, fn) {
   return { id, label, description, apply: fn };
 }
@@ -89,6 +92,33 @@ const kgraph = make(
   }
 );
 
+// 7. Headroom (smart) — query-aware adaptive extraction (from Tejas Chopra's
+//    headroom; see compression/headroom.js). Keeps ~60% of sentences by
+//    information saturation, biased toward the legal question.
+const headroomSmart = make(
+  'headroom',
+  'Headroom (smart)',
+  'Query-aware adaptive keep (~60%)',
+  (facts, ctx) => compressText(facts, 0.6, ctx?.question || '').text
+);
+
+// 8. Headroom (aggressive) — same engine, tighter target (~30%).
+const headroomAggressive = make(
+  'headroom-aggressive',
+  'Headroom (aggressive)',
+  'Query-aware adaptive keep (~30%)',
+  (facts, ctx) => compressText(facts, 0.3, ctx?.question || '').text
+);
+
+// 9. Remove duplicate context — SimHash near-duplicate sentence removal
+//    (infographic technique #6).
+const dedupe = make(
+  'dedupe',
+  'Remove duplicate context',
+  'Drop near-duplicate sentences (SimHash)',
+  (facts) => dedupeSentences(facts)
+);
+
 function splitSentences(text = '') {
   return text
     .replace(/\s+/g, ' ')
@@ -97,20 +127,22 @@ function splitSentences(text = '') {
 }
 
 export function registerCompressors() {
-  [raw, chunking, semantic, structured, timeline, kgraph].forEach((c) => {
-    compressors.register({
-      ...c,
-      apply: (facts) => {
-        const text = c.apply(facts);
-        return { text, tokensApprox: approxTokens(text), label: c.label };
-      },
-    });
-  });
+  [raw, chunking, semantic, structured, timeline, kgraph, headroomSmart, headroomAggressive, dedupe].forEach(
+    (c) => {
+      compressors.register({
+        ...c,
+        apply: (facts, ctx) => {
+          const text = c.apply(facts, ctx);
+          return { text, tokensApprox: approxTokens(text), label: c.label };
+        },
+      });
+    }
+  );
   return compressors.all();
 }
 
-export function compress(id, facts) {
+export function compress(id, facts, ctx) {
   const c = compressors.get(id);
   if (!c) throw new Error(`Unknown compressor: ${id}`);
-  return c.apply(facts);
+  return c.apply(facts, ctx);
 }

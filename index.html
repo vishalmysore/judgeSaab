@@ -95,6 +95,16 @@
         </section>
       </div>
 
+      <section id="compressionPanel" class="panel" hidden>
+        <h2>Compression report — fewer tokens, same judgment?</h2>
+        <p class="muted small">
+          Runs every context strategy (including <strong>Headroom</strong>, an adaptive
+          query-aware compressor) on the selected model + dataset, then measures token
+          savings against whether the verdict still matches the full-context judgment.
+        </p>
+        <div id="compressionReport" class="scroll-x"></div>
+      </section>
+
       <section class="panel">
         <h2>Case-by-case judgments</h2>
         <div id="caseList" class="case-list"></div>
