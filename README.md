@@ -5,7 +5,7 @@
 <h1 align="center">JudgeSaab</h1>
 
 <p align="center"><strong>Browser-Native AI Judge Benchmark Platform</strong><br/>
-<em>How would AI judge this case?</em></p>
+<em>How good is your compression?</em></p>
 
 JudgeSaab is an open-source, **100% browser-native** benchmark that evaluates AI
 models on legal cases by comparing their judgments against actual human court
