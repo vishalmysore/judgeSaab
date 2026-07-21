@@ -8,6 +8,8 @@ import { SAMPLE_CASES, groupByDataset } from './cases.js';
 
 // verdictType tells the evaluator how to interpret human.verdict.
 const VERDICT_TYPE = {
+  'SCOTUS-Classic': 'binary_appeal',
+  CommonLaw: 'binary_outcome',
   ECtHR: 'binary_violation', // violation | no_violation
   SCOTUS: 'binary_appeal', // affirmed | reversed
   CaseHOLD: 'multiple_choice', // option_N
@@ -16,6 +18,8 @@ const VERDICT_TYPE = {
 };
 
 const JURIS = {
+  'SCOTUS-Classic': 'United States',
+  CommonLaw: 'United Kingdom',
   ECtHR: 'Council of Europe',
   SCOTUS: 'United States',
   CaseHOLD: 'United States',
@@ -23,15 +27,26 @@ const JURIS = {
   'Harvard Caselaw': 'United States',
 };
 
+// Human-friendly display names and whether the dataset is real or synthetic.
+const NAMES = {
+  'SCOTUS-Classic': 'US Supreme Court — landmark (real)',
+  CommonLaw: 'English common law — landmark (real)',
+  ECtHR: 'ECtHR (synthetic)',
+  SCOTUS: 'SCOTUS (synthetic)',
+  CaseHOLD: 'CaseHOLD (synthetic)',
+};
+
+const REAL_DATASETS = new Set(['SCOTUS-Classic', 'CommonLaw']);
+
 export function registerBundledDatasets() {
   const groups = groupByDataset();
   for (const [id, cases] of groups) {
     datasets.register({
       id,
-      name: id,
+      name: NAMES[id] || id,
       jurisdiction: JURIS[id] || 'Unknown',
       verdictType: VERDICT_TYPE[id] || 'binary_violation',
-      source: 'bundled-synthetic',
+      source: REAL_DATASETS.has(id) ? 'public-domain' : 'bundled-synthetic',
       cases,
       async load() {
         return cases;

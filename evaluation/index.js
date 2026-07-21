@@ -17,6 +17,17 @@ function canonicalVerdict(v = '') {
   if (/\bviolation\b|\bviolated\b|\bbreach\b|\binfringement\b/.test(n)) return 'violation';
   if (/\breversed?\b|\bvacated\b|\boverturned\b|\bunconstitutional\b/.test(n)) return 'reversed';
   if (/\baffirmed?\b|\bupheld\b|\bconstitutional\b|\bvalid\b/.test(n)) return 'affirmed';
+  // Common-law outcome vocab (negated forms first so "not liable" doesn't match "liable").
+  if (/\bnot liable\b|\bno liability\b|\bnot negligent\b|\bno duty\b/.test(n)) return 'not_liable';
+  if (/\bliable\b|\bnegligent\b|\bstrict(ly)? liab/.test(n) || /\bduty of care\b|\bowed a duty\b/.test(n))
+    return 'liable';
+  if (/\bnot recoverable\b|\btoo remote\b|\bnot foreseeable\b|\bno damages\b/.test(n))
+    return 'not_recoverable';
+  if (/\brecoverable\b/.test(n)) return 'recoverable';
+  if (/\bno contract\b|\bnot binding\b|\bno binding contract\b|\binvitation to treat\b/.test(n))
+    return 'no_contract';
+  if (/\bbinding contract\b|\benforceable contract\b|\bvalid contract\b|\bcontract was formed\b|\bunilateral offer\b/.test(n))
+    return 'contract';
   return n;
 }
 

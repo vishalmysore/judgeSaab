@@ -116,12 +116,27 @@ export default {
 
 Load it with `JudgeSaab.use(plugin)` or `JudgeSaab.useUrl(url)`.
 
-## Note on data
+## Datasets & data provenance
 
-The bundled cases are **original synthetic scenarios** written in the style of the
-named corpora — they do not reproduce any real case text. Real dataset adapters
-(ECtHR, CaseHOLD, SCOTUS, COLIEE, Harvard Caselaw) can be added as plugins that
-fetch and normalize into the same case schema.
+Two kinds of bundled cases:
+
+- **Real, public-domain landmark cases** (the default datasets) — court opinions
+  are not copyrightable and these decisions are long in the public domain. Each
+  links to the actual judgment:
+  - **US Supreme Court — landmark:** Marbury v. Madison (1803), McCulloch v.
+    Maryland (1819), Gibbons v. Ogden (1824), Weeks v. United States (1914) —
+    linked to [Justia](https://supreme.justia.com/).
+  - **English common law — landmark:** Carlill v Carbolic Smoke Ball Co (1892),
+    Donoghue v Stevenson (1932), Rylands v Fletcher (1868), Hadley v Baxendale
+    (1854) — linked to [BAILII](https://www.bailii.org/).
+  - Facts and holdings are summarized in our own neutral words; the linked
+    judgment is the authoritative source.
+- **Synthetic scenarios** (clearly labelled) written in the style of ECtHR /
+  SCOTUS / CaseHOLD for extra coverage — illustrative, not real cases.
+
+More real corpora (ECtHR HUDOC, CaseHOLD, COLIEE, Harvard Caselaw) can be added as
+plugins that fetch and normalize into the same case schema, including a
+`source: { label, url }` that renders a link to the actual case in the UI.
 
 ## License
 

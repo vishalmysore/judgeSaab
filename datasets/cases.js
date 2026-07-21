@@ -1,17 +1,216 @@
 // datasets/cases.js
-// Bundled sample cases. All facts and judgments here are ORIGINAL, synthetic
-// scenarios written for benchmarking — they are inspired by the *style* of the
-// named corpora but do not reproduce any real case text. Real dataset adapters
-// (ECtHR, CaseHOLD, SCOTUS, COLIEE, Harvard Caselaw) can be added as plugins
-// that fetch and normalize into this same schema.
+// Bundled cases. Two kinds:
+//   1. REAL, PUBLIC-DOMAIN landmark cases (see REAL_CASES) — court opinions are
+//      not copyrightable, and these decisions are centuries/decades old and
+//      fully in the public domain. Facts and holdings are summarized here in our
+//      own neutral words; each case links to the actual judgment (Justia / BAILII).
+//   2. ORIGINAL SYNTHETIC scenarios written in the style of named corpora
+//      (ECtHR, SCOTUS, CaseHOLD) for additional coverage — clearly labelled as
+//      illustrative and not real cases.
 //
 // Case schema:
 //   { id, dataset, jurisdiction, title, year, question, facts, options?,
-//     human: { verdict, laws:[], reasoning } }
+//     human: { verdict, laws:[], reasoning }, source?: { label, url } }
 //
 // verdict vocab is per-dataset; the evaluation engine maps to a canonical label.
 
-export const SAMPLE_CASES = [
+// ── Real, public-domain landmark cases (with links to the actual judgment) ──
+export const REAL_CASES = [
+  // ---- US Supreme Court (public domain; Justia) ----
+  {
+    id: 'scotus-marbury-1803',
+    dataset: 'SCOTUS-Classic',
+    jurisdiction: 'United States',
+    title: 'Marbury v. Madison',
+    year: 1803,
+    question:
+      'Was §13 of the Judiciary Act of 1789 — purporting to give the Supreme Court original jurisdiction to issue writs of mandamus — consistent with Article III of the Constitution? (answer: constitutional or unconstitutional)',
+    facts:
+      'In the final days of the Adams administration, William Marbury was appointed a justice of the ' +
+      'peace, but his signed commission was never delivered. When the new Secretary of State, James ' +
+      'Madison, withheld it, Marbury petitioned the Supreme Court directly for a writ of mandamus ' +
+      'ordering delivery, relying on a section of the Judiciary Act of 1789 that purported to grant the ' +
+      'Court original jurisdiction to issue such writs. Article III of the Constitution specifies the ' +
+      'Court’s original jurisdiction and does not include such cases.',
+    human: {
+      verdict: 'unconstitutional',
+      laws: ['U.S. Constitution, Article III', 'Judiciary Act of 1789, §13'],
+      reasoning:
+        'Although Marbury had a legal right to his commission, the Court could not grant the remedy: ' +
+        'the statutory provision purporting to expand the Court’s original jurisdiction conflicted with ' +
+        'Article III and was void. A law repugnant to the Constitution is invalid, and it is the ' +
+        'province of the courts to say what the law is — establishing judicial review.',
+    },
+    source: { label: 'Marbury v. Madison, 5 U.S. 137 (1803) — Justia', url: 'https://supreme.justia.com/cases/federal/us/5/137/' },
+  },
+  {
+    id: 'scotus-mcculloch-1819',
+    dataset: 'SCOTUS-Classic',
+    jurisdiction: 'United States',
+    title: 'McCulloch v. Maryland',
+    year: 1819,
+    question:
+      'Could the State of Maryland levy a tax on the federally chartered Bank of the United States? (answer: constitutional or unconstitutional)',
+    facts:
+      'Congress chartered the Second Bank of the United States and opened a branch in Maryland. Maryland ' +
+      'enacted a tax on banks not chartered by the state, aimed at the federal branch. James McCulloch, ' +
+      'the branch cashier, refused to pay. Maryland argued the Constitution nowhere expressly authorizes ' +
+      'Congress to charter a bank, and that a state may tax activities within its borders.',
+    human: {
+      verdict: 'unconstitutional',
+      laws: ['U.S. Constitution, Necessary and Proper Clause', 'Supremacy Clause'],
+      reasoning:
+        'Congress possessed implied power under the Necessary and Proper Clause to charter the Bank as a ' +
+        'means to legitimate constitutional ends. Because the power to tax involves the power to destroy, ' +
+        'a state could not tax a federal instrumentality; the Supremacy Clause barred Maryland’s tax, ' +
+        'which was therefore unconstitutional.',
+    },
+    source: { label: 'McCulloch v. Maryland, 17 U.S. 316 (1819) — Justia', url: 'https://supreme.justia.com/cases/federal/us/17/316/' },
+  },
+  {
+    id: 'scotus-gibbons-1824',
+    dataset: 'SCOTUS-Classic',
+    jurisdiction: 'United States',
+    title: 'Gibbons v. Ogden',
+    year: 1824,
+    question:
+      'Did a New York steamboat monopoly yield to a federal coasting license under the Commerce Clause? (answer: affirmed or reversed)',
+    facts:
+      'New York granted an exclusive monopoly to operate steamboats in its waters, which Ogden held. ' +
+      'Gibbons ran competing steamboats between New Jersey and New York under a license granted by ' +
+      'federal coasting law. Ogden obtained an injunction under the state monopoly; Gibbons argued the ' +
+      'federal license controlled interstate navigation.',
+    human: {
+      verdict: 'reversed',
+      laws: ['U.S. Constitution, Commerce Clause'],
+      reasoning:
+        'The commerce power extends to navigation and to commerce among the states, and a valid federal ' +
+        'licensing law overrides a conflicting state grant. The New York monopoly could not stand against ' +
+        'Gibbons’s federal coasting license; the injunction was reversed.',
+    },
+    source: { label: 'Gibbons v. Ogden, 22 U.S. 1 (1824) — Justia', url: 'https://supreme.justia.com/cases/federal/us/22/1/' },
+  },
+  {
+    id: 'scotus-weeks-1914',
+    dataset: 'SCOTUS-Classic',
+    jurisdiction: 'United States',
+    title: 'Weeks v. United States',
+    year: 1914,
+    question:
+      'Must evidence that federal officers seized from the defendant’s home without a warrant be excluded from his trial? (answer: affirmed or reversed)',
+    facts:
+      'Federal officers, without a search warrant, entered Weeks’s home and seized private papers later ' +
+      'used to convict him of using the mails for illegal lottery tickets. Weeks moved for the return of ' +
+      'his property and to exclude the evidence, arguing the warrantless seizure violated the Fourth ' +
+      'Amendment.',
+    human: {
+      verdict: 'reversed',
+      laws: ['U.S. Constitution, Fourth Amendment'],
+      reasoning:
+        'The warrantless seizure of papers from a private home violated the Fourth Amendment, and allowing ' +
+        'their use at trial would render the constitutional protection meaningless. The evidence had to be ' +
+        'excluded — establishing the federal exclusionary rule — and the conviction was reversed.',
+    },
+    source: { label: 'Weeks v. United States, 232 U.S. 383 (1914) — Justia', url: 'https://supreme.justia.com/cases/federal/us/232/383/' },
+  },
+
+  // ---- English common law (public domain; BAILII) ----
+  {
+    id: 'commonlaw-carlill-1892',
+    dataset: 'CommonLaw',
+    jurisdiction: 'United Kingdom',
+    title: 'Carlill v Carbolic Smoke Ball Co',
+    year: 1892,
+    question:
+      'Was there a binding contract entitling Mrs Carlill to the advertised £100 reward? (answer: binding contract or no contract)',
+    facts:
+      'The Carbolic Smoke Ball Company advertised that it would pay £100 to anyone who used its smoke ball ' +
+      'as directed and still caught influenza, adding that it had deposited £1,000 with a bank to show its ' +
+      'sincerity. Mrs Carlill bought and used the ball as directed, then caught influenza. The company ' +
+      'argued its advertisement was mere puff and too vague to be a contractual offer.',
+    human: {
+      verdict: 'binding contract',
+      laws: ['Contract law — unilateral offer and acceptance'],
+      reasoning:
+        'The advertisement was a unilateral offer to the world, its seriousness confirmed by the bank ' +
+        'deposit; Mrs Carlill accepted by performing the specified conditions, and her use supplied ' +
+        'consideration. A binding contract was formed and the £100 was payable.',
+    },
+    source: { label: 'Carlill v Carbolic Smoke Ball Co [1892] EWCA Civ 1 — BAILII', url: 'https://www.bailii.org/ew/cases/EWCA/Civ/1892/1.html' },
+  },
+  {
+    id: 'commonlaw-donoghue-1932',
+    dataset: 'CommonLaw',
+    jurisdiction: 'United Kingdom',
+    title: 'Donoghue v Stevenson',
+    year: 1932,
+    question:
+      'Did the ginger-beer manufacturer owe a duty of care to the consumer who did not buy the drink? (answer: liable or not liable)',
+    facts:
+      'Mrs Donoghue drank ginger beer bought for her by a friend from a café; the opaque bottle, ' +
+      'manufactured by Stevenson, contained the decomposed remains of a snail, and she fell ill. She had ' +
+      'no contract with the manufacturer or the café owner, so she sued the manufacturer in negligence. ' +
+      'The manufacturer argued it owed no duty to someone with whom it had no contract.',
+    human: {
+      verdict: 'liable',
+      laws: ['Tort law — negligence, duty of care (neighbour principle)'],
+      reasoning:
+        'A manufacturer of products it intends to reach the consumer in the form they left it, with no ' +
+        'reasonable possibility of intermediate examination, owes that consumer a duty to take reasonable ' +
+        'care. Liability in negligence does not depend on a contract; the manufacturer owed and breached a ' +
+        'duty of care.',
+    },
+    source: { label: 'Donoghue v Stevenson [1932] UKHL 100 — BAILII', url: 'https://www.bailii.org/uk/cases/UKHL/1932/100.html' },
+  },
+  {
+    id: 'commonlaw-rylands-1868',
+    dataset: 'CommonLaw',
+    jurisdiction: 'United Kingdom',
+    title: 'Rylands v Fletcher',
+    year: 1868,
+    question:
+      'Was the defendant liable, without proof of negligence, when water from his reservoir escaped and flooded the neighbouring mine? (answer: liable or not liable)',
+    facts:
+      'The defendants built a reservoir on their land to supply their mill. Water broke through disused ' +
+      'mine shafts beneath the site and flooded the plaintiff’s adjoining coal mine. The plaintiff could ' +
+      'not show the defendants were negligent; the question was whether liability could arise from the ' +
+      'escape itself.',
+    human: {
+      verdict: 'liable',
+      laws: ['Tort law — strict liability for escape (non-natural use of land)'],
+      reasoning:
+        'A person who, for his own purposes, brings and keeps on his land something likely to do mischief ' +
+        'if it escapes, keeps it at his peril and is liable for the natural consequences of its escape, ' +
+        'regardless of negligence. The non-natural use and escape made the defendants strictly liable.',
+    },
+    source: { label: 'Rylands v Fletcher [1868] UKHL 1 — BAILII', url: 'https://www.bailii.org/uk/cases/UKHL/1868/1.html' },
+  },
+  {
+    id: 'commonlaw-hadley-1854',
+    dataset: 'CommonLaw',
+    jurisdiction: 'United Kingdom',
+    title: 'Hadley v Baxendale',
+    year: 1854,
+    question:
+      'Were the mill’s lost profits recoverable as damages for the carrier’s delay in delivering a broken crankshaft? (answer: recoverable or not recoverable)',
+    facts:
+      'A mill’s crankshaft broke, and the owners engaged Baxendale to carry the broken shaft to engineers ' +
+      'as a pattern for a replacement. Delivery was delayed and the mill stood idle longer than it would ' +
+      'have, so the owners claimed their lost profits. They had not told the carrier that the mill would be ' +
+      'wholly stopped until the new shaft arrived.',
+    human: {
+      verdict: 'not recoverable',
+      laws: ['Contract law — remoteness of damage'],
+      reasoning:
+        'Damages for breach are limited to losses arising naturally from the breach or those in the ' +
+        'reasonable contemplation of both parties when contracting. The special loss of profits was not ' +
+        'communicated and not reasonably foreseeable to the carrier, so it was too remote and not recoverable.',
+    },
+    source: { label: 'Hadley v Baxendale [1854] EWHC J70 — BAILII', url: 'https://www.bailii.org/ew/cases/EWHC/Exch/1854/J70.html' },
+  },
+];
+
+export const SYNTHETIC_CASES = [
   // ---- ECtHR-style (human-rights, violation / no_violation) ----
   {
     id: 'ecthr-001',
@@ -213,6 +412,9 @@ export const SAMPLE_CASES = [
     },
   },
 ];
+
+// Real public-domain cases first, so they lead the dataset dropdown.
+export const SAMPLE_CASES = [...REAL_CASES, ...SYNTHETIC_CASES];
 
 // Group cases by dataset id for the dataset registry.
 export function groupByDataset() {
