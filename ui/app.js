@@ -175,7 +175,6 @@ function readOpts() {
 
 function renderRun(run) {
   $('#summaryCards').innerHTML = renderSummaryCards(run.summary);
-  $('#runTitle').textContent = `${run.modelName} · ${run.datasetId} · ${run.compressor}`;
 }
 
 function appendCase(result) {
