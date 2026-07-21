@@ -61,10 +61,15 @@
           <input id="repeatsInput" type="number" min="1" max="5" value="1" />
         </div>
         <div class="control actions">
-          <button id="runBtn" class="primary">Run benchmark</button>
-          <button id="compareBtn">Compare models</button>
+          <button id="runBtn" class="primary">Run selected model</button>
           <button id="compressBtn">Compare compression</button>
         </div>
+        <p class="control-hint">
+          Run models <strong>one at a time</strong> — each result is saved (in-browser, IndexedDB) and
+          added to the leaderboard, which persists across reloads. Pick a model, run it, then pick the
+          next: the leaderboard builds up your model comparison run by run. Loading a new LLM frees the
+          previous one from GPU memory automatically.
+        </p>
       </section>
 
       <section class="progress-wrap">

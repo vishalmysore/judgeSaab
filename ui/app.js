@@ -11,12 +11,7 @@ import { registerMetrics } from '../evaluation/index.js';
 import { registerPrompts } from '../models/prompts.js';
 import { use } from '../plugins/index.js';
 import ukPlugin from '../plugins/example-uk-dataset.js';
-import {
-  runBenchmark,
-  compareModels,
-  compareCompression,
-  exportResults,
-} from '../benchmark/index.js';
+import { runBenchmark, compareCompression, exportResults } from '../benchmark/index.js';
 import { getAllRuns, clearRuns } from '../core/store.js';
 import { canonicalVerdict as canon } from '../evaluation/index.js';
 import {
@@ -76,7 +71,6 @@ async function checkGPU() {
 
 function wireEvents() {
   $('#runBtn').addEventListener('click', onRun);
-  $('#compareBtn').addEventListener('click', onCompareModels);
   $('#compressBtn').addEventListener('click', onCompareCompression);
   $('#exportJsonBtn').addEventListener('click', () =>
     download('judgesaab-results.json', exportResults(allRuns, 'json'))
@@ -129,21 +123,11 @@ const onRun = busyDuring(async () => {
   lastRun = run;
   renderRun(run);
   await refreshLeaderboard();
+  logLine(
+    `Saved “${run.modelName}” on ${run.datasetId} to the leaderboard — run another model to compare.`,
+    'info'
+  );
   setProgress(1, `Done — overall ${(run.summary.overall * 100).toFixed(1)}%`);
-});
-
-const onCompareModels = busyDuring(async () => {
-  const opts = readOpts();
-  const ids = models.all().map((m) => m.id);
-  // Only include WebGPU models if available, else just the baseline.
-  const gpu = await hasWebGPU();
-  const selected = gpu ? ids : ids.filter((id) => models.get(id).backend !== 'webgpu');
-  logLine(`Comparing ${selected.length} models…`, 'info');
-  const runs = await compareModels(selected, opts);
-  lastRun = runs[0];
-  renderRun(runs[0]);
-  $('#comparisonChart').innerHTML = renderComparisonChart(runs);
-  await refreshLeaderboard();
 });
 
 const onCompareCompression = busyDuring(async () => {
@@ -202,9 +186,20 @@ function appendCase(result) {
 }
 
 async function refreshLeaderboard() {
-  allRuns = await getAllRuns();
+  const stored = await getAllRuns();
+  // Keep the latest run per (model · dataset · compressor) so re-running a model
+  // updates its row instead of stacking duplicates. Full history stays in the
+  // store and in exports.
+  const latest = new Map();
+  for (const r of stored.sort((a, b) => a.ts - b.ts)) {
+    latest.set(`${r.modelId}|${r.datasetId}|${r.compressor}`, r);
+  }
+  allRuns = [...latest.values()];
   $('#leaderboard').innerHTML = renderLeaderboard(allRuns);
-  if (allRuns.length) $('#comparisonChart').innerHTML = renderComparisonChart(allRuns.slice(-6));
+  if (allRuns.length) {
+    const recent = [...allRuns].sort((a, b) => b.ts - a.ts).slice(0, 6);
+    $('#comparisonChart').innerHTML = renderComparisonChart(recent);
+  }
 }
 
 function setProgress(frac, text) {
@@ -215,7 +210,7 @@ function setProgress(frac, text) {
 
 function setBusy(b) {
   $$('.controls button, .controls select, .controls input').forEach((el) => (el.disabled = b));
-  $('#runBtn').textContent = b ? 'Running…' : 'Run benchmark';
+  $('#runBtn').textContent = b ? 'Running…' : 'Run selected model';
 }
 
 function logLine(msg, level = 'info') {
