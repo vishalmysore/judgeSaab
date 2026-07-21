@@ -12,6 +12,15 @@ models on legal cases by comparing their judgments against actual human court
 decisions. It runs entirely on your device using **WebGPU + WebLLM** — documents
 never leave the browser.
 
+> **The core idea — validating compression with real cases.**
+> The best way to know whether a context-compression technique actually works is
+> to run it against real historical court cases: compress the facts, re-run the AI
+> judge, and check whether it reaches the **same judgment as it did on the full
+> facts**. If the verdict is unchanged, the compression preserved the
+> legally-decisive information — it works. JudgeSaab calls this **judgment
+> fidelity**, and it is the headline metric of the "Compare compression" report
+> (distinct from whether the AI agrees with the human judge).
+
 **Live demo:** https://vishalmysore.github.io/judgeSaab/
 
 ## Highlights
