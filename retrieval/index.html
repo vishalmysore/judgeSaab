@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>JudgeSaab — Retrieval (RAG) Test</title>
+    <meta
+      name="description"
+      content="Precedent-recall test: does your retriever surface the authorities the court actually cited? A browser-native, ground-truth-anchored RAG benchmark on real legal cases."
+    />
+    <link rel="stylesheet" href="../css/styles.css" />
+    <link rel="icon" href="../judgesaab_white.png" />
+    <style>
+      /* Retrieval-specific bits layered on top of the shared JudgeSaab theme. */
+      .metric.lead { border-left-width: 6px; }
+      .pill.mid-pill { background: color-mix(in srgb, var(--mid) 22%, transparent); color: var(--mid); }
+      .rank-list { display: flex; flex-direction: column; gap: 4px; margin-top: 4px; }
+      .rank-row {
+        display: grid;
+        grid-template-columns: 20px 16px 1fr auto;
+        align-items: center;
+        gap: 8px;
+        font-size: 13px;
+        padding: 4px 8px;
+        border-radius: 8px;
+        border: 1px solid var(--border);
+        background: var(--panel);
+      }
+      .rank-row.relevant {
+        background: color-mix(in srgb, var(--good) 12%, var(--panel));
+        border-color: color-mix(in srgb, var(--good) 40%, var(--border));
+      }
+      .rank-num { color: var(--muted); font-size: 11px; text-align: center; }
+      .rank-mark { color: var(--good); font-weight: 800; text-align: center; }
+      .rank-row:not(.relevant) .rank-mark { color: var(--border); }
+      .rank-label { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+      .rank-score { color: var(--muted); font-size: 11px; font-variant-numeric: tabular-nums; }
+      .subnav { display: flex; gap: 10px; justify-content: center; margin-top: 12px; }
+    </style>
+  </head>
+  <body>
+    <header class="site-header">
+      <div class="brand">
+        <img src="../judgesaab_white.png" class="logo-img" alt="JudgeSaab" />
+        <p class="tagline">How good is your retrieval?</p>
+      </div>
+      <div class="header-meta">
+        <span class="badge good">no GPU needed</span>
+        <a class="badge link" href="../index.html">← Compression test</a>
+      </div>
+    </header>
+
+    <main>
+      <section class="intro">
+        <p>
+          The retrieval stage of the pipeline, tested the JudgeSaab way. Every bundled court case
+          records the authorities the court <strong>actually cited</strong> — that is the ground
+          truth, no hand-labeling. Given only the legal question, a retriever ranks a corpus of
+          statutes, constitutional provisions, convention articles, and common-law doctrines (with
+          distractors mixed in). The headline metric is <strong>precedent recall@k</strong>: of the
+          authorities the court relied on, how many did the retriever surface? This is the retrieval
+          analogue of the compression test's <em>judgment fidelity</em>. Runs entirely on your
+          device, instantly — no model, no GPU.
+        </p>
+      </section>
+
+      <section class="controls card">
+        <div class="control">
+          <label for="retrieverSelect">Retriever <span class="info" tabindex="0" title="The retrieval strategy under test — BM25, TF-IDF, token overlap, or a random floor. Swap it and watch precedent recall change.">ⓘ</span></label>
+          <select id="retrieverSelect"></select>
+        </div>
+        <div class="control">
+          <label for="datasetSelect">Dataset <span class="info" tabindex="0" title="Which court cases to draw queries from. Each case's real citations are the gold documents.">ⓘ</span></label>
+          <select id="datasetSelect"></select>
+        </div>
+        <div class="control">
+          <label for="queryModeSelect">Query <span class="info" tabindex="0" title="What the retriever sees as the query: the legal question only, or the question plus the case facts.">ⓘ</span></label>
+          <select id="queryModeSelect">
+            <option value="question">Question only</option>
+            <option value="question+facts">Question + facts</option>
+          </select>
+        </div>
+        <div class="control narrow">
+          <label for="kInput">k (top-k) <span class="info" tabindex="0" title="How many top-ranked authorities count as 'retrieved' when scoring recall@k, precision@k, and nDCG@k.">ⓘ</span></label>
+          <input id="kInput" type="number" min="1" max="20" value="3" />
+        </div>
+        <div class="control actions">
+          <button id="runBtn" class="primary" title="Run the selected retriever over the case pool and score its ranking against the court's citations.">Run retriever</button>
+          <button id="compareBtn" title="Run every retriever on the same setup and rank them by precedent recall.">Compare all retrievers</button>
+        </div>
+        <p class="control-hint">
+          The test is <strong>deterministic and instant</strong>: results update as you change any
+          control. The leaderboard ranks retrievers by <strong>precedent recall@k</strong> — the
+          share of the court's own cited authorities that the retriever surfaces.
+        </p>
+      </section>
+
+      <section class="panel">
+        <div class="panel-head">
+          <h2>Dashboard <span class="info" tabindex="0" title="Scores for the current retriever, averaged across all queries in the dataset.">ⓘ</span></h2>
+          <div class="panel-actions">
+            <button id="exportJsonBtn" class="ghost" title="Download the current run(s) as JSON.">Export JSON</button>
+            <button id="exportCsvBtn" class="ghost" title="Download the leaderboard as CSV.">Export CSV</button>
+          </div>
+        </div>
+        <div id="runContext" class="run-context"></div>
+        <div id="summaryCards" class="cards"></div>
+      </section>
+
+      <section class="panel">
+        <h2>Retriever leaderboard <span class="info" tabindex="0" title="Every retriever on the current dataset + query setup, best precedent recall first.">ⓘ</span></h2>
+        <div id="leaderboard" class="scroll-x"></div>
+      </section>
+
+      <section class="panel">
+        <h2>Case-by-case retrieval <span class="info" tabindex="0" title="For each case: the authorities the court cited (gold) beside the retriever's top-k, with ✓ marking a cited authority that was surfaced.">ⓘ</span></h2>
+        <div id="caseList" class="case-list"></div>
+      </section>
+
+      <section class="panel">
+        <h2>Authority corpus <span class="info" tabindex="0" title="The document corpus the retriever searches: gold authorities (cited by at least one case) plus distractors that make retrieval a real test.">ⓘ</span></h2>
+        <div id="corpusList" class="scroll-x"></div>
+      </section>
+
+      <section class="panel">
+        <h2>Log</h2>
+        <div id="log" class="log"></div>
+      </section>
+
+      <section class="panel about">
+        <h2>How it works</h2>
+        <ol>
+          <li><strong>Query</strong> — take a case's legal question (optionally with facts) as the retrieval query.</li>
+          <li><strong>Corpus</strong> — rank a fixed pool of legal authorities (statutes, constitutional provisions, convention articles, doctrines) plus distractors.</li>
+          <li><strong>Ground truth</strong> — the authorities the court <em>actually cited</em> (from the case record) are the relevant documents. No annotation needed.</li>
+          <li><strong>Score</strong> — precedent recall@k, precision@k, hit rate, MRR, nDCG@k.</li>
+          <li><strong>Compare</strong> — swap the retriever and see which surfaces the precedents the court relied on.</li>
+        </ol>
+        <p class="muted small">
+          Programmatic API on <code>window.JudgeSaabRetrieval</code>:
+          <code>runRetrieval()</code>, <code>compareRetrievers()</code>, <code>corpusInfo()</code>.
+          Part of the JudgeSaab pipeline-test family — one legal corpus, a ground-truth-anchored test
+          per stage (compression, retrieval, reranking, …).
+        </p>
+      </section>
+    </main>
+
+    <footer class="site-footer">
+      <span>JudgeSaab · retrieval test · browser-native · privacy-first</span>
+    </footer>
+
+    <script type="module" src="app.js"></script>
+  </body>
+</html>
