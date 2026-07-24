@@ -23,6 +23,11 @@ never leave the browser.
 
 **Live demo:** https://vishalmysore.github.io/judgeSaab/
 
+> **A pipeline-test family, one legal ground truth.** The same idea generalizes to
+> every stage of an AI pipeline: find the invariant a stage must preserve, and use
+> the part of the court record that already encodes the ground truth for it. The
+> first extension is the **[retrieval (RAG) test](retrieval/)** — see below.
+
 ## Highlights
 
 - 🔒 **Privacy-first** — inference runs locally; nothing is uploaded.
@@ -86,6 +91,30 @@ unchanged after compression. On the bundled ECtHR set, Headroom/semantic/structu
 cut 23–52% of tokens with the verdict **100% unchanged**, while an over-aggressive
 knowledge-graph view (−88% tokens) flips a verdict — exactly the tradeoff to watch.
 
+## Retrieval (RAG) test — precedent recall
+
+The retrieval stage of the pipeline, tested the same way — and with **no model or
+GPU**, so it runs instantly. Open **[`retrieval/`](retrieval/)** (linked from the
+header of the main app).
+
+The insight is that the ground truth is already in the data: **every case records the
+authorities the court actually cited** (`human.laws`). Those become the gold
+documents. Given only the legal question, a retriever ranks a corpus of statutes,
+constitutional provisions, convention articles, and common-law doctrines — with
+distractors mixed in — and is scored on **precedent recall@k**: of the authorities the
+court relied on, how many did it surface? That's the retrieval analogue of judgment
+fidelity.
+
+- **Retrievers:** BM25, TF-IDF cosine, token overlap (Jaccard), and a random floor.
+- **Metrics:** precedent recall@k, precision@k, hit rate, MRR, nDCG@k.
+- **API on `window.JudgeSaabRetrieval`:** `runRetrieval()`, `compareRetrievers()`,
+  `corpusInfo()`.
+
+On the bundled cases (question-only queries, k=3) BM25 recovers 100% of the cited
+authorities while the random floor sits at 0% — and the metrics disagree in
+instructive ways (BM25 wins recall, TF-IDF wins MRR). See the writeup in
+[`blog/how-good-is-your-retrieval.md`](blog/how-good-is-your-retrieval.md).
+
 ## Architecture
 
 ```
@@ -96,6 +125,7 @@ judgesaab/
  ├── compression/   context-representation strategies (+ headroom.js port)
  ├── benchmark/     run engine (runCase / runBenchmark / compareModels)
  ├── evaluation/    metrics (accuracy, reasoning, reliability)
+ ├── retrieval/     precedent-recall RAG test (authorities, retrievers, metrics)
  ├── dashboard/     cards, leaderboard, SVG charts
  ├── ui/            DOM controller
  └── plugins/       plugin loader + example UK-dataset plugin
