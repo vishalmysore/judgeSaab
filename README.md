@@ -115,6 +115,27 @@ authorities while the random floor sits at 0% — and the metrics disagree in
 instructive ways (BM25 wins recall, TF-IDF wins MRR). See the writeup in
 [`blog/how-good-is-your-retrieval.md`](blog/how-good-is-your-retrieval.md).
 
+## Reranking test — controlling authority
+
+The reranking stage, same idea. A deliberately **weak first-stage retriever** (token
+overlap) proposes candidate authorities; the reranker reorders them. What matters is
+whether the **controlling authority** — the provision the court's holding turns on —
+reaches the top. Open **[`reranking/`](reranking/)**.
+
+The graded ground truth is again intrinsic to the case record: a case's cited
+authorities are `human.laws`, and the **first-listed is the controlling one** (gain 2),
+the rest are cited-but-not-decisive (gain 1), everything else is a distractor (gain 0).
+
+- **Rerankers:** no-rerank baseline, BM25, reciprocal-rank fusion, MMR (diversity).
+- **Metrics:** controlling@1 (headline), controlling@k, controlling MRR, graded nDCG@k,
+  recall@k.
+- **API on `window.JudgeSaabReranking`:** `runReranking()`, `compareRerankers()`.
+
+On the bundled cases the real rerankers lift controlling@1 to ~81% from the ~75%
+first-stage baseline — a real, honest gain. Everything is real BM25 / TF-IDF / RRF /
+MMR over the real corpus; **nothing is mocked**. Writeup:
+[`blog/how-good-is-your-reranking.md`](blog/how-good-is-your-reranking.md).
+
 ## Architecture
 
 ```
@@ -126,6 +147,7 @@ judgesaab/
  ├── benchmark/     run engine (runCase / runBenchmark / compareModels)
  ├── evaluation/    metrics (accuracy, reasoning, reliability)
  ├── retrieval/     precedent-recall RAG test (authorities, retrievers, metrics)
+ ├── reranking/     controlling-authority rerank test (rerankers, graded metrics)
  ├── dashboard/     cards, leaderboard, SVG charts
  ├── ui/            DOM controller
  └── plugins/       plugin loader + example UK-dataset plugin

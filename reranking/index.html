@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>JudgeSaab — Reranking Test</title>
+    <meta
+      name="description"
+      content="Controlling-authority test: does your reranker put the precedent the holding turns on at rank 1? A browser-native, ground-truth-anchored reranking benchmark on real legal cases."
+    />
+    <link rel="stylesheet" href="../css/styles.css" />
+    <link rel="icon" href="../judgesaab_white.png" />
+    <style>
+      .metric.lead { border-left-width: 6px; }
+      .pill.mid-pill { background: color-mix(in srgb, var(--mid) 22%, transparent); color: var(--mid); }
+      .rank-list { display: flex; flex-direction: column; gap: 4px; margin-top: 4px; }
+      .rank-row {
+        display: grid;
+        grid-template-columns: 20px 16px 1fr auto;
+        align-items: center;
+        gap: 8px;
+        font-size: 13px;
+        padding: 4px 8px;
+        border-radius: 8px;
+        border: 1px solid var(--border);
+        background: var(--panel);
+      }
+      .rank-row.relevant {
+        background: color-mix(in srgb, var(--good) 12%, var(--panel));
+        border-color: color-mix(in srgb, var(--good) 40%, var(--border));
+      }
+      .rank-row.controlling {
+        background: color-mix(in srgb, var(--accent) 14%, var(--panel));
+        border-color: color-mix(in srgb, var(--accent) 45%, var(--border));
+      }
+      .rank-num { color: var(--muted); font-size: 11px; text-align: center; }
+      .rank-mark { font-weight: 800; text-align: center; color: var(--good); }
+      .rank-row.controlling .rank-mark { color: var(--accent); }
+      .rank-row:not(.relevant) .rank-mark { color: var(--border); }
+      .rank-label { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+      .rank-score { color: var(--muted); font-size: 11px; }
+    </style>
+  </head>
+  <body>
+    <header class="site-header">
+      <div class="brand">
+        <img src="../judgesaab_white.png" class="logo-img" alt="JudgeSaab" />
+        <p class="tagline">How good is your reranking?</p>
+      </div>
+      <div class="header-meta">
+        <span class="badge good">no GPU needed</span>
+        <a class="badge link" href="../retrieval/">← Retrieval test</a>
+        <a class="badge link" href="../index.html">Compression test</a>
+      </div>
+    </header>
+
+    <main>
+      <section class="intro">
+        <p>
+          The reranking stage, tested the JudgeSaab way. A weak first-stage retriever proposes
+          candidate authorities; the reranker reorders them. What matters is whether the
+          <strong>controlling authority</strong> — the provision the court's holding actually turns
+          on — ends up at the top. The headline metric is <strong>controlling@1</strong>. The ground
+          truth is intrinsic to the case record: a case's cited authorities are its
+          <code>human.laws</code>, and the first-listed is the controlling one — no hand-labeling.
+          Runs entirely on your device, instantly. <strong>Nothing is mocked</strong>: real BM25 /
+          TF-IDF / RRF / MMR over the real authority corpus.
+        </p>
+      </section>
+
+      <section class="controls card">
+        <div class="control">
+          <label for="rerankerSelect">Reranker <span class="info" tabindex="0" title="The reranking strategy under test: no-rerank baseline, BM25, reciprocal-rank fusion, or MMR diversity.">ⓘ</span></label>
+          <select id="rerankerSelect"></select>
+        </div>
+        <div class="control">
+          <label for="datasetSelect">Dataset <span class="info" tabindex="0" title="Which court cases to draw queries from. Each case's controlling citation is the target.">ⓘ</span></label>
+          <select id="datasetSelect"></select>
+        </div>
+        <div class="control narrow">
+          <label for="candNInput">Candidates <span class="info" tabindex="0" title="How many authorities the weak first-stage retriever (token overlap) proposes for the reranker to reorder.">ⓘ</span></label>
+          <input id="candNInput" type="number" min="2" max="20" value="8" />
+        </div>
+        <div class="control narrow">
+          <label for="kInput">k (top-k) <span class="info" tabindex="0" title="Cutoff for controlling@k, nDCG@k, and recall@k after reranking.">ⓘ</span></label>
+          <input id="kInput" type="number" min="1" max="20" value="5" />
+        </div>
+        <div class="control actions">
+          <button id="runBtn" class="primary" title="Run the selected reranker and score whether the controlling authority reaches rank 1.">Run reranker</button>
+          <button id="compareBtn" title="Run every reranker on the same setup and rank them by controlling@1.">Compare all rerankers</button>
+        </div>
+        <p class="control-hint">
+          The first stage is deliberately weak (token overlap), so the controlling authority is
+          usually <em>in</em> the candidate pool but not at the top — the reranker's job is to fix
+          that. <strong>Deterministic and instant</strong>: results update as you change any control.
+        </p>
+      </section>
+
+      <section class="panel">
+        <div class="panel-head">
+          <h2>Dashboard <span class="info" tabindex="0" title="Scores for the current reranker, averaged across all cases.">ⓘ</span></h2>
+          <div class="panel-actions">
+            <button id="exportJsonBtn" class="ghost">Export JSON</button>
+            <button id="exportCsvBtn" class="ghost">Export CSV</button>
+          </div>
+        </div>
+        <div id="runContext" class="run-context"></div>
+        <div id="summaryCards" class="cards"></div>
+      </section>
+
+      <section class="panel">
+        <h2>Reranker leaderboard <span class="info" tabindex="0" title="Every reranker on the current setup, best controlling@1 first.">ⓘ</span></h2>
+        <div id="leaderboard" class="scroll-x"></div>
+      </section>
+
+      <section class="panel">
+        <h2>Case-by-case reranking <span class="info" tabindex="0" title="For each case: the controlling authority and the weak first-stage order, beside the reranked top-k. ★ = controlling, ✓ = other cited authority.">ⓘ</span></h2>
+        <div id="caseList" class="case-list"></div>
+      </section>
+
+      <section class="panel">
+        <h2>Log</h2>
+        <div id="log" class="log"></div>
+      </section>
+
+      <section class="panel about">
+        <h2>How it works</h2>
+        <ol>
+          <li><strong>First stage</strong> — a weak retriever (token overlap) proposes the top-N candidate authorities.</li>
+          <li><strong>Rerank</strong> — the reranker reorders those candidates using stronger signals (BM25, rank fusion, MMR).</li>
+          <li><strong>Ground truth</strong> — the controlling authority (first-listed in the case record) is the target; other cited authorities get partial credit.</li>
+          <li><strong>Score</strong> — controlling@1, controlling@k, controlling MRR, graded nDCG@k, recall@k.</li>
+          <li><strong>Compare</strong> — see which reranker most reliably lifts the controlling precedent to the top.</li>
+        </ol>
+        <p class="muted small">
+          API on <code>window.JudgeSaabReranking</code>: <code>runReranking()</code>,
+          <code>compareRerankers()</code>. Part of the JudgeSaab pipeline-test family —
+          one legal corpus, a ground-truth-anchored test per stage
+          (<a href="../index.html">compression</a>, <a href="../retrieval/">retrieval</a>, reranking, …).
+          Real algorithms over the real corpus; nothing is mocked.
+        </p>
+      </section>
+    </main>
+
+    <footer class="site-footer">
+      <span>JudgeSaab · reranking test · browser-native · privacy-first</span>
+    </footer>
+
+    <script type="module" src="app.js"></script>
+  </body>
+</html>
