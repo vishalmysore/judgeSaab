@@ -60,8 +60,11 @@
           statutes, constitutional provisions, convention articles, and common-law doctrines (with
           distractors mixed in). The headline metric is <strong>precedent recall@k</strong>: of the
           authorities the court relied on, how many did the retriever surface? This is the retrieval
-          analogue of the compression test's <em>judgment fidelity</em>. Runs entirely on your
-          device, instantly — no model, no GPU.
+          analogue of the compression test's <em>judgment fidelity</em>. The lexical retrievers
+          (BM25, TF-IDF, overlap) run instantly with no model or GPU; the optional
+          <strong>Semantic</strong> retriever is a <strong>real dense-vector store</strong> — it
+          loads MiniLM sentence embeddings (Transformers.js) in your browser and ranks by cosine.
+          Nothing is mocked.
         </p>
       </section>
 
@@ -90,9 +93,12 @@
           <button id="compareBtn" title="Run every retriever on the same setup and rank them by precedent recall.">Compare all retrievers</button>
         </div>
         <p class="control-hint">
-          The test is <strong>deterministic and instant</strong>: results update as you change any
-          control. The leaderboard ranks retrievers by <strong>precedent recall@k</strong> — the
-          share of the court's own cited authorities that the retriever surfaces.
+          The lexical retrievers are <strong>deterministic and instant</strong>: results update as
+          you change any control. Selecting <strong>Semantic (MiniLM embeddings)</strong> loads a
+          real ~23 MB embedding model in your browser (once) — after that it's included in
+          <strong>Compare all retrievers</strong> too. The leaderboard ranks by
+          <strong>precedent recall@k</strong> — the share of the court's own cited authorities the
+          retriever surfaces.
         </p>
       </section>
 

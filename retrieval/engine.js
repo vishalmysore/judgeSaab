@@ -6,53 +6,76 @@
 
 import { AUTHORITIES, AUTHORITY_BY_ID } from './authorities.js';
 import { RETRIEVER_BY_ID } from './retrievers.js';
+import { embeddingRetriever } from './embedding.js';
 import { buildQueries } from './gold.js';
 import { scoreQuery, aggregate } from './metrics.js';
 
-// Run one retriever over the case pool. Returns per-case detail + summary.
-export function runRetrieval(retrieverId, opts = {}) {
-  const { k = 5, queryMode = 'question+facts', datasetId = null } = opts;
-  const retriever = RETRIEVER_BY_ID.get(retrieverId);
-  if (!retriever) throw new Error(`Unknown retriever: ${retrieverId}`);
+// Shape one case's ranking into the per-case result object (shared by the sync
+// lexical path and the async embedding path).
+function caseResult(q, ranked, k) {
+  return {
+    caseId: q.caseId,
+    dataset: q.dataset,
+    title: q.title,
+    jurisdiction: q.jurisdiction,
+    year: q.year,
+    question: q.question,
+    gold: q.gold.map((id) => AUTHORITY_BY_ID.get(id)),
+    unresolved: q.unresolved,
+    // top-k retrieved, annotated with whether each was actually cited.
+    retrieved: ranked.slice(0, k).map((r) => ({
+      authority: AUTHORITY_BY_ID.get(r.id),
+      score: r.score,
+      relevant: q.gold.includes(r.id),
+    })),
+    scores: scoreQuery(ranked, q.gold, k),
+  };
+}
 
-  const queries = buildQueries(queryMode, datasetId);
-  const results = queries.map((q) => {
-    const ranked = retriever.rank(q.queryText, AUTHORITIES);
-    const s = scoreQuery(ranked, q.gold, k);
-    return {
-      caseId: q.caseId,
-      dataset: q.dataset,
-      title: q.title,
-      jurisdiction: q.jurisdiction,
-      year: q.year,
-      question: q.question,
-      gold: q.gold.map((id) => AUTHORITY_BY_ID.get(id)),
-      unresolved: q.unresolved,
-      // top-k retrieved, annotated with whether each was actually cited.
-      retrieved: ranked.slice(0, k).map((r) => ({
-        authority: AUTHORITY_BY_ID.get(r.id),
-        score: r.score,
-        relevant: q.gold.includes(r.id),
-      })),
-      scores: s,
-    };
-  });
-
+function makeRun(retrieverId, retrieverLabel, opts, results) {
   return {
     retrieverId,
-    retrieverLabel: retriever.label,
-    k,
-    queryMode,
-    datasetId: datasetId ?? 'all',
+    retrieverLabel,
+    k: opts.k ?? 5,
+    queryMode: opts.queryMode ?? 'question+facts',
+    datasetId: opts.datasetId ?? 'all',
     ts: Date.now(),
     results,
     summary: aggregate(results.map((r) => r.scores)),
   };
 }
 
-// Compare several retrievers on the same setup; sorted by recall@k desc.
-export function compareRetrievers(retrieverIds, opts = {}) {
-  const runs = retrieverIds.map((id) => runRetrieval(id, opts));
+// Run one lexical (synchronous) retriever over the case pool.
+export function runRetrieval(retrieverId, opts = {}) {
+  const { k = 5, queryMode = 'question+facts', datasetId = null } = opts;
+  const retriever = RETRIEVER_BY_ID.get(retrieverId);
+  if (!retriever) throw new Error(`Unknown retriever: ${retrieverId}`);
+  const queries = buildQueries(queryMode, datasetId);
+  const results = queries.map((q) => caseResult(q, retriever.rank(q.queryText, AUTHORITIES), k));
+  return makeRun(retrieverId, retriever.label, { k, queryMode, datasetId }, results);
+}
+
+// Run the async semantic (embedding) retriever. hooks.onProgress gets model-load
+// progress events from Transformers.js.
+export async function runRetrievalAsync(retrieverId, opts = {}, hooks = {}) {
+  if (retrieverId !== 'embedding') return runRetrieval(retrieverId, opts);
+  const { k = 5, queryMode = 'question+facts', datasetId = null } = opts;
+  await embeddingRetriever.ensureReady(hooks.onProgress);
+  const queries = buildQueries(queryMode, datasetId);
+  const results = [];
+  for (const q of queries) {
+    results.push(caseResult(q, await embeddingRetriever.rankAll(q.queryText), k));
+  }
+  return makeRun('embedding', embeddingRetriever.label, { k, queryMode, datasetId }, results);
+}
+
+// Compare several retrievers on the same setup; sorted by recall@k desc. Any
+// 'embedding' id is run via the async path (and only if its model is ready).
+export async function compareRetrievers(retrieverIds, opts = {}) {
+  const runs = [];
+  for (const id of retrieverIds) {
+    runs.push(id === 'embedding' ? await runRetrievalAsync(id, opts) : runRetrieval(id, opts));
+  }
   runs.sort((a, b) => b.summary.recall - a.summary.recall);
   return runs;
 }

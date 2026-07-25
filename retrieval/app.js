@@ -1,11 +1,13 @@
 // retrieval/app.js
-// UI for the retrieval (RAG) test. Deterministic and instant — no model/GPU — so it
-// runs on load and on every control change.
+// UI for the retrieval (RAG) test. The lexical retrievers are deterministic and
+// instant (no model/GPU) and run on load. The optional Semantic retriever loads a
+// real embedding model (MiniLM) in the browser on demand.
 
 import { $, escapeHtml, fmtPct, download, round } from '../core/utils.js';
 import { RETRIEVERS } from './retrievers.js';
+import { embeddingRetriever } from './embedding.js';
 import { datasetIds } from './gold.js';
-import { runRetrieval, compareRetrievers, corpusInfo, exportRuns } from './engine.js';
+import { runRetrieval, runRetrievalAsync, compareRetrievers, corpusInfo, exportRuns } from './engine.js';
 import { AUTHORITIES } from './authorities.js';
 
 const el = {
@@ -36,12 +38,39 @@ function log(msg) {
 
 // ---- Populate controls ----
 function initControls() {
-  el.retriever.innerHTML = RETRIEVERS.map(
-    (r) => `<option value="${r.id}" title="${escapeHtml(r.description)}">${escapeHtml(r.label)}</option>`
-  ).join('');
+  const all = [...RETRIEVERS, embeddingRetriever];
+  el.retriever.innerHTML = all
+    .map(
+      (r) => `<option value="${r.id}" title="${escapeHtml(r.description)}">${escapeHtml(r.label)}</option>`
+    )
+    .join('');
   el.dataset.innerHTML =
     `<option value="">All datasets</option>` +
     datasetIds().map((d) => `<option value="${escapeHtml(d)}">${escapeHtml(d)}</option>`).join('');
+}
+
+function setBusy(busy, msg) {
+  el.runBtn.disabled = busy;
+  el.compareBtn.disabled = busy;
+  el.retriever.disabled = busy;
+  if (busy && msg) {
+    el.cards.innerHTML = `<div class="metric card neutral" style="grid-column:1/-1">
+      <div class="metric-value" style="font-size:18px">${escapeHtml(msg)}</div>
+      <div class="metric-label">real embedding model — no mock</div>
+    </div>`;
+  }
+}
+
+// Throttled model-load progress -> log (one line per file completion).
+const seenFiles = new Set();
+function onModelProgress(p) {
+  if (!p || !p.file) return;
+  if (p.status === 'progress' && typeof p.progress === 'number') {
+    setBusy(true, `Loading MiniLM… ${p.file} ${Math.round(p.progress)}%`);
+  } else if (p.status === 'done' && !seenFiles.has(p.file)) {
+    seenFiles.add(p.file);
+    log(`Downloaded ${p.file}`);
+  }
 }
 
 function opts() {
@@ -172,26 +201,54 @@ function renderCorpus() {
 }
 
 // ---- Actions ----
-function doRun() {
+async function doRun() {
   const o = opts();
-  const run = runRetrieval(el.retriever.value, o);
-  lastRuns = [run];
-  renderCards(run);
-  renderCases(run);
-  renderLeaderboard([run]);
-  log(`${run.retrieverLabel}: recall@${run.k} ${fmtPct(run.summary.recall)} over ${run.summary.n} cases (${run.datasetId}).`);
+  const id = el.retriever.value;
+  try {
+    let run;
+    if (id === 'embedding') {
+      const firstLoad = !embeddingRetriever.isReady();
+      if (firstLoad) log('Loading the semantic model (MiniLM, ~23 MB) — first time only…');
+      setBusy(true, 'Loading semantic model…');
+      run = await runRetrievalAsync(id, o, { onProgress: onModelProgress });
+    } else {
+      run = runRetrieval(id, o);
+    }
+    lastRuns = [run];
+    renderCards(run);
+    renderCases(run);
+    renderLeaderboard([run]);
+    log(`${run.retrieverLabel}: recall@${run.k} ${fmtPct(run.summary.recall)} over ${run.summary.n} cases (${run.datasetId}).`);
+  } catch (e) {
+    log(`⚠ ${el.retriever.value} failed: ${e.message}`);
+    el.cards.innerHTML = `<div class="metric card bad" style="grid-column:1/-1">
+      <div class="metric-value" style="font-size:16px">Semantic retriever unavailable</div>
+      <div class="metric-label">${escapeHtml(e.message)} — the lexical retrievers still work.</div>
+    </div>`;
+  } finally {
+    setBusy(false);
+  }
 }
 
-function doCompare() {
+async function doCompare() {
   const o = opts();
-  const runs = compareRetrievers(RETRIEVERS.map((r) => r.id), o);
-  lastRuns = runs;
-  const best = runs[0];
-  renderCards(best);
-  renderCases(best);
-  renderLeaderboard(runs);
-  el.retriever.value = best.retrieverId;
-  log(`Compared ${runs.length} retrievers — best: ${best.retrieverLabel} @ recall ${fmtPct(best.summary.recall)}.`);
+  // Include the semantic retriever only once its model is loaded, so the default
+  // page load and a plain "Compare" never trigger a download.
+  const ids = RETRIEVERS.map((r) => r.id);
+  if (embeddingRetriever.isReady()) ids.push('embedding');
+  try {
+    setBusy(true);
+    const runs = await compareRetrievers(ids, o);
+    lastRuns = runs;
+    const best = runs[0];
+    renderCards(best);
+    renderCases(best);
+    renderLeaderboard(runs);
+    el.retriever.value = best.retrieverId;
+    log(`Compared ${runs.length} retrievers — best: ${best.retrieverLabel} @ recall ${fmtPct(best.summary.recall)}.`);
+  } finally {
+    setBusy(false);
+  }
 }
 
 function init() {

@@ -14,7 +14,7 @@ RAG lives or dies on retrieval. If the retriever doesn't surface the right sourc
 
 Court cases hand you that label for free. **Every judicial opinion cites the statutes, precedents, and doctrines the court relied on.** Those citations *are* the relevance judgments — authoritative, unambiguous, and produced by the court itself, not an annotator. So the test writes itself: give a retriever only the legal question, let it rank a corpus of authorities, and check how many of the ones the court *actually cited* it surfaced. I call it **precedent recall@k**, and it's the retrieval twin of the [judgment-fidelity](how-good-is-your-compression.md) metric from the compression test.
 
-The whole thing runs **100% in your browser** — and unlike the compression test, it needs **no LLM and no GPU**, so it's instant. 👉 **[Try it live](https://vishalmysore.github.io/judgeSaab/retrieval/)** · **[Source](https://github.com/vishalmysore/judgeSaab)**
+The whole thing runs **100% in your browser**. The lexical retrievers need **no LLM and no GPU**, so they're instant — and there's an optional **real dense-vector retriever** (MiniLM embeddings via Transformers.js) for when you want to pit semantic search against BM25. 👉 **[Try it live](https://vishalmysore.github.io/judgeSaab/retrieval/)** · **[Source](https://github.com/vishalmysore/judgeSaab)**
 
 ---
 
@@ -58,6 +58,22 @@ Two things worth staring at:
 
 1. **The floor is honest.** Random retrieval scores ~0% recall — with distractors outnumbering the gold answers almost 1:1, guessing gets you nothing. That's the sanity check every benchmark should have and most don't.
 2. **The metrics disagree — on purpose.** BM25 wins *recall* (it gets all the cited authorities into the top 3), but TF-IDF wins *MRR* (it's better at putting the single most relevant authority in slot 1). A dashboard that reports only one number would crown the wrong retriever depending on which number it picked. Retrieval quality isn't scalar, and the test refuses to pretend it is.
+
+## Adding a real vector store — dense embeddings, in the browser
+
+BM25 and TF-IDF are lexical: they match *words*. Modern RAG usually reaches for *semantic* retrieval — dense embeddings that match *meaning*. So the test ships one too, and it's the real thing, not a placeholder: selecting **Semantic** loads [`Xenova/all-MiniLM-L6-v2`](https://huggingface.co/Xenova/all-MiniLM-L6-v2) via [Transformers.js](https://github.com/huggingface/transformers.js), embeds the corpus into an in-memory vector index, and ranks by cosine similarity. The model (~23 MB, quantized) runs entirely in your browser — no server, no API, nothing mocked. The lexical retrievers stay instant; the embedding model loads only when you ask for it.
+
+And here's the honest result on this corpus:
+
+| Retriever | Precedent recall@3 | MRR | nDCG@3 |
+|---|---|---|---|
+| **BM25** | **100%** | 0.927 | 0.950 |
+| Token overlap (Jaccard) | 96.9% | 0.875 | 0.894 |
+| TF-IDF cosine | 93.8% | **0.953** | 0.933 |
+| **Semantic (MiniLM)** | 90.6% | **0.953** | 0.913 |
+| Random | 0% | 0.097 | 0.000 |
+
+The dense retriever **does not win**. On short, keyword-dense legal labels — "Fourth Amendment", "Judiciary Act of 1789, §13" — exact lexical match is a genuinely strong signal, and a 22M-parameter general-purpose embedding model has no special knowledge of statute numbers. It ties TF-IDF for the best MRR but trails BM25 on recall. That's not a bug; it's the widely-underappreciated reality that **hybrid lexical+dense retrieval usually beats either alone**, and that "just add embeddings" is not a free upgrade. A benchmark worth trusting is one that will happily tell you your fancy vector store lost to a 1970s ranking function.
 
 ## A case, ranked
 
