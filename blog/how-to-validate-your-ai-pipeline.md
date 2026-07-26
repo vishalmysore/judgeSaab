@@ -56,50 +56,50 @@ No annotator. No budget. The ground truth is already in the file, put there by t
 
 Here's the whole pipeline, phase by phase — the document type to use, the ground truth it hands you for free, and the metric.
 
-### Phase 1 — Ingestion (chunk · extract · dedup · classify)
+### 📥 Phase 1 — Ingestion (chunk · extract · dedup · classify)
 
 | Document type | Free ground truth | Validates | Metric |
 |---|---|---|---|
-| Screenplays / plays | scene & act boundaries (sluglines) | **Chunking** | boundary alignment · scene-integrity |
-| Patents | claim dependency tree | **Chunking** (structural) | claim-graph reconstruction |
-| Statutes / contracts | Title→§→clause hierarchy, defined terms | **Chunking** · grounding | boundary F1 · term consistency |
-| 10-K filings (+XBRL) | XBRL-tagged financial facts | **Extraction** / table-QA | field exact-match |
-| News-wire articles | same story republished across outlets | **Deduplication** | dup-detection F1 |
-| Support tickets / GitHub issues | human-assigned queue / labels | **Classification / routing** | routing accuracy |
+| 🎬 Screenplays / plays | scene & act boundaries (sluglines) | **Chunking** | boundary alignment · scene-integrity |
+| 📜 Patents | claim dependency tree | **Chunking** (structural) | claim-graph reconstruction |
+| ⚖️ Statutes / contracts | Title→§→clause hierarchy, defined terms | **Chunking** · grounding | boundary F1 · term consistency |
+| 📊 10-K filings (+XBRL) | XBRL-tagged financial facts | **Extraction** / table-QA | field exact-match |
+| 📰 News-wire articles | same story republished across outlets | **Deduplication** | dup-detection F1 |
+| 🎫 Support tickets / GitHub issues | human-assigned queue / labels | **Classification / routing** | routing accuracy |
 
-### Phase 2 — Representation & Retrieval (embed · retrieve · rerank · multi-hop)
-
-| Document type | Free ground truth | Validates | Metric |
-|---|---|---|---|
-| Court cases / patents | citations / prior-art references | **Retrieval** | recall@k ✅ |
-| Court cases / patents | controlling authority / §102 reference | **Reranking** | controlling@1 ✅ |
-| StackOverflow / Quora | duplicate-question links | **Embedding** (semantic equivalence) | dup nearest-neighbor rate |
-| Wikipedia | redirects (synonyms) + link graph | **Embedding · Multi-hop** | neighbor rate · hop-path accuracy |
-| Wikidata / genealogies | typed relation edges | **Graph retrieval** | path correctness |
-| Subtitle / parliament pairs | professional translations | **Cross-lingual retrieval** | round-trip fidelity |
-
-### Phase 3 — Generation (compress · summarize · ground · reason)
+### 🔎 Phase 2 — Representation & Retrieval (embed · retrieve · rerank · multi-hop)
 
 | Document type | Free ground truth | Validates | Metric |
 |---|---|---|---|
-| Court cases | the verdict | **Compression** (context distillation) | judgment fidelity ✅ |
-| Papers / news | abstract / headline | **Summarization** | key-fact preservation |
-| Patents | claim ⊂ parent-claim (scope) | **Reasoning** (entailment) | scope-monotonicity |
-| Formal proofs (Lean/Coq) | machine-checkable proof | **Reasoning / verification** | does it check |
-| Sudoku / logic puzzles | unique verifiable solution | **Constraint reasoning** | solved rate |
-| Any source (court record) | grounded-in-source flag | **Hallucination / grounding** | groundedness ✅ |
+| ⚖️ Court cases / patents | citations / prior-art references | **Retrieval** | recall@k ✅ |
+| 🥇 Court cases / patents | controlling authority / §102 reference | **Reranking** | controlling@1 ✅ |
+| 💬 StackOverflow / Quora | duplicate-question links | **Embedding** (semantic equivalence) | dup nearest-neighbor rate |
+| 📚 Wikipedia | redirects (synonyms) + link graph | **Embedding · Multi-hop** | neighbor rate · hop-path accuracy |
+| 🕸️ Wikidata / genealogies | typed relation edges | **Graph retrieval** | path correctness |
+| 🌐 Subtitle / parliament pairs | professional translations | **Cross-lingual retrieval** | round-trip fidelity |
 
-### Phase 4 — Agentic (plan · act/tool-use · execute · remember)
+### ✨ Phase 3 — Generation (compress · summarize · ground · reason)
 
 | Document type | Free ground truth | Validates | Metric |
 |---|---|---|---|
-| Recipes / assembly manuals | ordered dependent steps (DAG) | **Planning** | topological validity |
-| Spreadsheets | formula → computed value | **Tool-use / action** | exact-output match |
-| SQL DB + query log | query → result set | **Tool-use** (SQL) | result-set match |
-| API docs (request/response) | call → expected response | **Function-calling** | schema + param correctness |
-| Shell / CI transcripts | command → resulting state | **Execution / recovery** | state match · recovery rate |
-| Chess/Go records (PGN) | legal moves + result | **Multi-step trajectory** | legal-move rate · outcome |
-| Detective novels | the reveal + planted clue | **Long-context / memory** | answer *and* cite the clue |
+| 🏛️ Court cases | the verdict | **Compression** (context distillation) | judgment fidelity ✅ |
+| 📄 Papers / news | abstract / headline | **Summarization** | key-fact preservation |
+| 🔬 Patents | claim ⊂ parent-claim (scope) | **Reasoning** (entailment) | scope-monotonicity |
+| 🧮 Formal proofs (Lean/Coq) | machine-checkable proof | **Reasoning / verification** | does it check |
+| 🧩 Sudoku / logic puzzles | unique verifiable solution | **Constraint reasoning** | solved rate |
+| 🔗 Any source (court record) | grounded-in-source flag | **Hallucination / grounding** | groundedness ✅ |
+
+### 🤖 Phase 4 — Agentic (plan · act/tool-use · execute · remember)
+
+| Document type | Free ground truth | Validates | Metric |
+|---|---|---|---|
+| 🍳 Recipes / assembly manuals | ordered dependent steps (DAG) | **Planning** | topological validity |
+| 📈 Spreadsheets | formula → computed value | **Tool-use / action** | exact-output match |
+| 🗄️ SQL DB + query log | query → result set | **Tool-use** (SQL) | result-set match |
+| 🔌 API docs (request/response) | call → expected response | **Function-calling** | schema + param correctness |
+| ⌨️ Shell / CI transcripts | command → resulting state | **Execution / recovery** | state match · recovery rate |
+| ♟️ Chess/Go records (PGN) | legal moves + result | **Multi-step trajectory** | legal-move rate · outcome |
+| 🕵️ Detective novels | the reveal + planted clue | **Long-context / memory** | answer *and* cite the clue |
 
 ## The one rule
 
